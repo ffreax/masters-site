@@ -31,6 +31,21 @@
             });
         }
 
+        function getQueryParams(qs) {
+            qs = qs.split("+").join(" ");
+
+            var params = {};
+            var re = /[?&]?([^=]+)=([^&]*)/g;
+
+            var tokens;
+            while (tokens = re.exec(qs)) {
+                params[decodeURIComponent(tokens[1])]
+                        = decodeURIComponent(tokens[2]);
+            }
+
+            return params;
+        }
+
         $(function () {
             $("[rel-url]").click(function(){
                 $(".current").removeClass("current");
@@ -38,7 +53,12 @@
                 loadUrl($(this).attr("rel-url"));
             });
 
-            loadUrl("content/ru/cv.html");
+            var params = getQueryParams(window.location.href.substr(window.location.href.lastIndexOf("?")));
+            if(params['page']) {
+                loadUrl("content/ru/" + params['page'] + ".html");
+            } else {
+                loadUrl("content/ru/cv.html");
+            }
         });
     </script>
 </head>
@@ -72,7 +92,7 @@
 <!-- footer
 ================================================== -->
 <footer class="container">
-    <div id="footer-bottom" class="grid12 first">
+    <div id="footer-bottom" class="grid12 first" style="text-align: center;">
 
         <p>
             2014 &nbsp; &nbsp; &nbsp;
