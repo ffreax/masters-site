@@ -322,9 +322,9 @@ header #nav-wrap {
     padding: 0;
 }
 
-#page-content p {
-    line-height: 42px;
-}
+/*#page-content p {*/
+    /*line-height: 42px;*/
+/*}*/
 
 #page-content .continue a.button {
     float: left;

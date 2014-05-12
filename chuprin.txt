@@ -1,0 +1,14 @@
+ru
+Чуприн Владислав Игоревич
+Повышение эффективности реализации модели распределённых вычислений MapReduce в рамках программного каркаса Hadoop
+Инженерия программного обеспечения
+
+ua
+Чуприн Владислав Ігорович
+Підвищення ефективності реалізації моделі розподіленних обчислень MapReduce у рамках программного каркасу Hadoop
+Інженерія программного забезпечення
+
+en
+Vladislav Chuprin
+Improving the efficiency of the implementation of distributed computing within MapReduce software framework Hadoop
+Software engineering
