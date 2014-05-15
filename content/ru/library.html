@@ -1,35 +1,161 @@
 <ol>
-    <h2>Собственные публикации и доклады</h2>
-    <li><p><a href="../../library/Анализ проблем безопасности.htm">
-        Анализ проблем безопасности архитектуры распределённых
-        NoSQL приложений на примере программного каркаса Hadoop</a><br/>
-        Авторы: Чуприн В.И., Чернышова А.В., Губенко Н.Е.<br/>
-        Описание: В статье выделены основные характеристики хранилищ для обработки больших
-        массивов данных. Проанализированы особенности архитектуры распределенных
-        приложений на примере программного каркаса Hadoop. Изучены существующие
-        компоненты приведенного каркаса. Предложена альтернатива стеку технологий,
-        поставляемому по умолчанию. Выделены основные проблемы архитектурной и операционной
-        составляющих. Предложены рекомендации по оптимизации подсистемы безопасности на
-        основе приведенных проблем.<br/>
-    </p></li>
-    <li><p><a href="../../library/Новые методы сжатия.htm">New time series compression methods of ecologic
-        parameters</a><br/>
-        Авторы: Chuprin V.I., Rodriges Zalipynis R.A.<br/>
-        Описание: The paper analyzes storage peculiarities of satellite Earth remote sensing data time
-        series. We propose methods for their compression based on the discovered peculiarities exploiting
-        different schemes of Huffman coding. One of the proposed methods reaches 6% increase in the
-        compression ratio (93%) in contrast to the deflate method used in Java SE6 (87%), for a time series
-        of aerosol optical thickness derived from MODIS radiometer of TERRA satellite. Further
-        improvement can be achieved by using the entropy coding of floating point numbers.<br/>
-    </p></li>
+	<h2>Собственные публикации и доклады</h2>
+	<li><p><a href="../../library/Анализ проблем безопасности.htm">
+		Анализ проблем безопасности архитектуры распределённых
+		NoSQL приложений на примере программного каркаса Hadoop</a><br/>
+		Авторы: Чуприн В.И., Чернышова А.В., Губенко Н.Е.<br/>
+		Описание: В статье выделены основные характеристики хранилищ для обработки больших
+		массивов данных. Проанализированы особенности архитектуры распределенных
+		приложений на примере программного каркаса Hadoop. Изучены существующие
+		компоненты приведенного каркаса. Предложена альтернатива стеку технологий,
+		поставляемому по умолчанию. Выделены основные проблемы архитектурной и операционной
+		составляющих. Предложены рекомендации по оптимизации подсистемы безопасности на
+		основе приведенных проблем.<br/>
+	</p></li>
+	<li><p><a href="../../library/Новые методы сжатия.htm">New time series compression methods of ecologic
+		parameters</a><br/>
+		Авторы: Chuprin V.I., Rodriges Zalipynis R.A.<br/>
+		Описание: The paper analyzes storage peculiarities of satellite Earth remote sensing data time
+		series. We propose methods for their compression based on the discovered peculiarities exploiting
+		different schemes of Huffman coding. One of the proposed methods reaches 6% increase in the
+		compression ratio (93%) in contrast to the deflate method used in Java SE6 (87%), for a time series
+		of aerosol optical thickness derived from MODIS radiometer of TERRA satellite. Further
+		improvement can be achieved by using the entropy coding of floating point numbers.<br/>
+	</p></li>
 
-    <h2>Тематические статьи</h2>
-    <li><p><a href="../../library/adaptive(classisication and optimization)-scheduler.htm">Бабич К К. Оптимизации для высоконагруженных
-        реляционных БД и альтернативные решения</a><br/>
-        Авторы: д.т.н. Фонотов А. М.<br/>
-        Описание: Персональный сайт на портале магистров ДонНТУ, 2013 г.<br/>
-        Источник: <br/>
-    </p></li>
+	<h2>Тематические статьи</h2>
+	<li><p><a href="../../library/adaptive(classisication%20and%20optimization)-scheduler.html">An Adaptive Scheduling
+		Algorithm for Dynamic Heterogeneous Hadoop Systems</a><br/>
+		Авторы: Aysan Rasooli , Douglas G. Down<br/>
+		Описание: The MapReduce and Hadoop frameworks were designed to support efficient large scale computations. There
+		has been growing interest in employing Hadoop clusters for various diverse applications. A large number of
+		(heterogeneous) clients, using the same Hadoop cluster, can result in tensions between the various performance
+		metrics by which such systems are measured. On the one hand, from the service provider side, the utilization of
+		the Hadoop cluster will increase. On the other hand, from the client perspective the parallelism in the system
+		may decrease (with a corresponding degradation in metrics such as mean completion time). An efficient scheduling
+		algorithm should strike a balance between utilization and parallelism in the cluster to address performance
+		metrics such as fairness and mean completion time. In this paper, we propose a new Hadoop cluster scheduling
+		algorithm, which uses system information such as estimated job arrival rates and mean job execution times to
+		make scheduling decisions. The objective of our algorithm is to improve mean completion time of submitted jobs.
+		In addition to addressing this concern, our algorithm provides competitive performance under fairness and
+		locality metrics (with respect to other well-known Hadoop scheduling algorithms - Fair Sharing and FIFO). This
+		approach can be efficiently applied in heterogeneous clusters, in contrast to most Hadoop cluster scheduling
+		algorithm work, which assumes homogeneous clusters. Using simulation, we demonstrate that our algorithm is a
+		very promising candidate for deployment in real systems.<br/>
+		Источник: <br/>
+	</p></li>
+	<li><p><a href="../../library/async-alg-in-mr.htm">Asynchronous Algorithms in MapReduce</a><br/>
+		Авторы: Karthik Kambatla, Naresh Rapolu, Suresh Jagannathan, Ananth Grama<br/>
+		Описание: Asynchronous algorithms have been demonstrated to improve scalability of a variety of applications in
+		parallel environments. Their distributed adaptations have received relatively less attention, particularly in
+		the context of conventional execution environments and associated overheads. One such framework, MapReduce, has
+		emerged as a commonly used programming framework for large-scale distributed environments. While the MapReduce
+		programming model has proved to be effective for data-parallel applications, significant questions relating to
+		its performance and application scope remain unresolved. The strict synchronization between map and reduce
+		phases limits expression of asynchrony and hence, does not readily support asynchronous algorithms.<br/>
+		Источник: <br/>
+	</p></li>
+	<li><p><a href="../../library/dedline-scheduler.htm">Scheduling Hadoop Jobs to Meet Deadlines</a><br/>
+		Авторы: Kamal Kc, Kemafor Anyanwu<br/>
+		Описание: User constraints such as deadlines are important requirements that are not considered by existing
+		cloud-based data processing environments such as Hadoop. In the current implementation, jobs are scheduled in
+		FIFO order by default with options for other priority based schedulers. In this paper, we extend real time
+		cluster scheduling approach to account for the two-phase computation style of MapReduce. We develop criteria for
+		scheduling jobs based on user specified deadline constraints and discuss our implementation and preliminary
+		evaluation of a Deadline Constraint Scheduler for Hadoop which ensures that only jobs whose deadlines can be met
+		are scheduled for execution.<br/>
+		Источник: <br/>
+	</p></li>
+	<li><p><a href="../../library/dynamic-scheduler.htm">Dynamic Proportional Share Scheduling in Hadoop</a><br/>
+		Авторы: Thomas Sandholm and Kevin Lai<br/>
+		Описание: We present the Dynamic Priority (DP) parallel task scheduler for Hadoop. It allows users to control
+		their allocated capacity by adjusting their spending over time. This simple mechanism allows the scheduler to
+		make more efficient decisions about which jobs and users to prioritize and gives users the tool to optimize and
+		customize their allocations to fit the importance and requirements of their jobs. Additionally, it gives users
+		the incentive to scale back their jobs when demand is high, since the cost of running on a slot is then also
+		more expensive. We envision our scheduler to be used by deadline or budget optimizing agents on behalf of users.
+		We describe the design and implementation of the DP scheduler and experimental results. We show that our
+		scheduler enforces service levels more accurately and also scales to more users with distinct service levels
+		than existing schedulers.<br/>
+		Источник: <br/>
+	</p></li>
+	<li><p><a href="../../library/fair-scheduler.htm">An Adaptive Scheduling Algorithm for Dynamic Heterogeneous Hadoop
+		Systems</a><br/>
+		Авторы: Matei Zaharia, Dhruba Borthakur, Joydeep Sen Sarma, Khaled Elmeleegy, Scott Shenker, Ion Stoica<br/>
+		Описание: Sharing a MapReduce cluster between users is attractive because it enables statistical multiplexing
+		(lowering costs) and allows users to share a common large data set. However, we find that traditional scheduling
+		algorithms can perform very poorly in MapReduce due to two aspects of the MapReduce setting: the need for data
+		locality (running computation where the data is) and the dependence between map and reduce tasks. We illustrate
+		these problems through our experience designing a fair scheduler for MapReduce at Facebook, which runs a
+		600-node multiuser data warehouse on Hadoop. We developed two simple techniques, delay scheduling and
+		copy-compute splitting, which improve throughput and response times by factors of 2 to 10. Although we focus on
+		multi-user workloads, our techniques can also raise throughput in a single-user, FIFO workload by a factor of
+		2.<br/>
+		Источник: <br/>
+	</p></li>
+	<li><p><a href="../../library/learning-scheduler.htm">Using Pattern Classification for Task Assignment in
+		MapReduce</a><br/>
+		Авторы: Jaideep Dhok and Vasudeva Varma<br/>
+		Описание: MapReduce has become a popular paradigm for large scale data processing in the cloud. The sheer scale
+		of MapReduce deployments make task assignment in MapReduce an interesting problem. The scale of MapReduce
+		applications presents unique opportunity to use data driven algorithms in resource management. We present a
+		learning based scheduler that uses pattern classification for utilization oriented task assignment in MapReduce.
+		We also present the application of our algorithm to the Hadoop platform. The scheduler assigns tasks by
+		classifying them in two classes, good and bad. From the tasks labeled as good it selects a task that is least
+		likely to overload a worker node. We allow users to plug in their own policy schemes for prioritizing jobs. The
+		scheduler learns the impact of different applications on utilization rather quickly and achieves a user
+		specified level of utilization. Our results show that our scheduler reduces response times of jobs in certain
+		cases by a factor of two.<br/>
+		Источник: <br/>
+	</p></li>
+	<li><p><a href="../../library/map-reduce-merge.htm">Map-Reduce-Merge: Simplified Relational Data Processing on Large
+		Clusters</a><br/>
+		Авторы: Hung-chih Yang, Ali Dasdan<br/>
+		Описание: Map-Reduce is a programming model that enables easy development of scalable parallel applications to
+		process vast amounts of data on large clusters of commodity machines. Through a simple interface with two
+		functions, map and reduce, this model facilitates parallel implementation of many real-world tasks such as data
+		processing for search engines and machine learning.
+		However, this model does not directly support processing multiple related heterogeneous datasets. While
+		processing relational data is a common need, this limitation causes difficulties and/or inefficiency when
+		Map-Reduce is applied on relational operations like joins.
+		We improve Map-Reduce into a new model called Map-Reduce-Merge. It adds to Map-Reduce a Merge phase that can
+		efficiently merge data already partitioned and sorted (or hashed) by map and reduce modules. We also demonstrate
+		that this new model can express relational algebra operators as well as implement several join algorithms.<br/>
+		Источник: <br/>
+	</p></li>
+	<li><p><a href="../../library/resource-aware-scheduler.htm">Resource-aware Adaptive Scheduling for MapReduce
+		Clusters</a><br/>
+		Авторы: Jorda Polo, Claris Castillo, David Carrera, Yolanda Becerra, Ian Whalley, Malgorzata Steinder, Jordi
+		Torres, and Eduard Ayguade<br/>
+		Описание: We present a resource-aware scheduling technique for MapReduce multi-job workloads that aims at
+		improving resource utilization across machines while observing completion time goals. Existing MapReduce
+		schedulers define a static number of slots to represent the capacity of a cluster, creating a fixed number of
+		execution slots per machine. This abstraction works for homogeneous workloads, but fails to capture the
+		different resource requirements of individual jobs in multi-user environments. Our technique leverages job
+		profiling information to dynamically adjust the number of slots on each machine, as well as workload placement
+		across them, to maximize the resource utilization of the cluster. In addition, our technique is guided by
+		user-provided completion time goals for each job.<br/>
+		Источник: <br/>
+	</p></li>
 
-    <h2>Переводы статей</h2>
+	<h2>Переводы статей</h2>
+	<li><p><a href="../../library/resource-aware-scheduler.htm">MapReduce: Simplified Data Processing on Large
+		Clusters</a><br/>
+		Авторы: Jeffrey Dean and Sanjay Ghemawat<br/>
+		Автор перевода: Чуприн В.И.
+		Описание: MapReduce is a programming model and an associated implementation for processing and generating large
+		data sets. Users specify a map function that processes a key/value pair to generate a set of intermediate
+		key/value pairs, and a reduce function that merges all intermediate values associated with the same intermediate
+		key. Many real world tasks are expressible in this model, as shown in the paper.
+		Programs written in this functional style are automatically parallelized and executed on a large cluster of
+		commodity machines. The run-time system takes care of the details of partitioning the input data, scheduling the
+		program's execution across a set of machines, handling machine failures, and managing the required inter-machine
+		communication. This allows programmers without any experience with parallel and distributed systems to easily
+		utilize the resources of a large distributed system.
+		Our implementation of MapReduce runs on a large cluster of commodity machines and is highly scalable: a typical
+		MapReduce computation processes many terabytes of data on thousands of machines. Programmers find the system
+		easy to use: hundreds of MapReduce programs have been implemented and upwards of one thousand MapReduce jobs are
+		executed on Google's clusters every day..<br/>
+		Источник: <br/>
+	</p></li>
 </ol>

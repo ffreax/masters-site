@@ -1,15 +1,54 @@
-﻿ table.main {}
- tr.row {}
- td.cell {}
- div.block {}
- div.paragraph {}
- .font0 { font:7pt Courier New, monospace; }
- .font1 { font:9pt Courier New, monospace; }
- .font2 { font:12pt David; }
- .font3 { font:9pt SimSun, monospace; }
- .font4 { font:8pt Times New Roman, serif; }
- .font5 { font:9pt Times New Roman, serif; }
- .font6 { font:10pt Times New Roman, serif; }
- .font7 { font:11pt Times New Roman, serif; }
- .font8 { font:12pt Times New Roman, serif; }
- .font9 { font:14pt Times New Roman, serif; }
+﻿table.main {
+}
+
+tr.row {
+}
+
+td.cell {
+}
+
+div.block {
+}
+
+div.paragraph {
+}
+
+.font0 {
+    font: 7pt Courier New, monospace;
+}
+
+.font1 {
+    font: 9pt Courier New, monospace;
+}
+
+.font2 {
+    font: 12pt David;
+}
+
+.font3 {
+    font: 9pt SimSun, monospace;
+}
+
+.font4 {
+    font: 8pt Times New Roman, serif;
+}
+
+.font5 {
+    font: 9pt Times New Roman, serif;
+}
+
+.font6 {
+    font: 10pt Times New Roman, serif;
+}
+
+.font7 {
+    font: 11pt Times New Roman, serif;
+}
+
+.font8 {
+    font: 12pt Times New Roman, serif;
+}
+
+.font9 {
+    font: 14pt Times New Roman, serif;
+}

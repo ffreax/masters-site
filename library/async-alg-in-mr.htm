@@ -1,167 +1,712 @@
 ﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
-	"http://www.w3.org/TR/html4/loose.dtd">
+		"http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<head><meta http-equiv="content-type" content="text/html; charset=UTF-8"/><meta name="generator" content="ABBYY FineReader 11"/><meta name="author" content="Karthik Kambatla,,,"/><meta name="description" content="gnuplot plot"/><title>kmeans-times.eps</title><link rel="stylesheet" href="async-alg-in-mr_files/async-alg-in-mr.css" type="text/css"/>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+	<meta name="generator" content="ABBYY FineReader 11"/>
+	<meta name="author" content="Karthik Kambatla,,,"/>
+	<meta name="description" content="gnuplot plot"/>
+	<title>kmeans-times.eps</title>
+	<link rel="stylesheet" href="async-alg-in-mr_files/async-alg-in-mr.css" type="text/css"/>
 </head>
 <body>
 <p><a name="bookmark0"></a><span class="font6" style="font-weight:bold;">Asynchronous Algorithms in MapReduce</span></p>
+
 <p><span class="font4">Karthik Kambatla, Naresh Rapolu, Suresh Jagannathan, Ananth Grama</span></p>
-<p><span class="font4" style="font-style:italic;">Department of Computer Science, Purdue University {kkambatl, nrapolu, suresh, ayg}@cs.purdue.edu</span></p>
-<p><span class="font4" style="font-weight:bold;font-style:italic;">Abstract</span><span class="font4" style="font-weight:bold;">—</span></p>
-<p><span class="font4" style="font-weight:bold;">Asynchronous algorithms have been demonstrated to improve scalability of a variety of applications in parallel environments. Their distributed adaptations have received relatively less attention, particularly in the context of conventional execution environments and associated overheads. One such framework, MapReduce, has emerged as a commonly used programming framework for large-scale distributed environments. While the MapReduce programming model has proved to be effective for data-parallel applications, significant questions relating to its performance and application scope remain unresolved. The strict synchronization between map and reduce phases limits expression of asynchrony and hence, does not readily support asynchronous algorithms.</span></p>
-<p><span class="font4" style="font-weight:bold;">This paper investigates the notion of partial synchronizations in iterative MapReduce applications to overcome global synchronization overheads. The proposed approach applies a locality-enhancing partition on the computation. Map tasks execute local computations with (relatively) frequent local synchronizations, with less frequent global synchronizations. This approach yields significant performance gains in distributed environments, even though their serial operation counts are higher. We demonstrate these performance gains on asynchronous algorithms for diverse applications, including </span><span class="font4" style="font-weight:bold;font-style:italic;">PageRank, Shortest Path,</span><span class="font4" style="font-weight:bold;"> and </span><span class="font4" style="font-weight:bold;font-style:italic;">K-Means.</span><span class="font4" style="font-weight:bold;"> We make the following specific contributions in the paper — (i) we motivate the need to extend MapReduce with constructs for asynchrony, (ii) we propose an API to facilitate partial synchronizations combined with eager scheduling and locality enhancing techniques, and (iii) demonstrate performance improvements from our proposed extensions through a variety of applications from different domains.</span></p>
+
+<p><span class="font4" style="font-style:italic;">Department of Computer Science, Purdue University {kkambatl, nrapolu, suresh, ayg}@cs.purdue.edu</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;font-style:italic;">Abstract</span><span class="font4"
+																																												style="font-weight:bold;">—</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">Asynchronous algorithms have been demonstrated to improve scalability of a variety of applications in parallel environments. Their distributed adaptations have received relatively less attention, particularly in the context of conventional execution environments and associated overheads. One such framework, MapReduce, has emerged as a commonly used programming framework for large-scale distributed environments. While the MapReduce programming model has proved to be effective for data-parallel applications, significant questions relating to its performance and application scope remain unresolved. The strict synchronization between map and reduce phases limits expression of asynchrony and hence, does not readily support asynchronous algorithms.</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">This paper investigates the notion of partial synchronizations in iterative MapReduce applications to overcome global synchronization overheads. The proposed approach applies a locality-enhancing partition on the computation. Map tasks execute local computations with (relatively) frequent local synchronizations, with less frequent global synchronizations. This approach yields significant performance gains in distributed environments, even though their serial operation counts are higher. We demonstrate these performance gains on asynchronous algorithms for diverse applications, including </span><span
+		class="font4" style="font-weight:bold;font-style:italic;">PageRank, Shortest Path,</span><span class="font4"
+																																																	 style="font-weight:bold;"> and </span><span
+		class="font4" style="font-weight:bold;font-style:italic;">K-Means.</span><span class="font4"
+																																									 style="font-weight:bold;"> We make the following specific contributions in the paper — (i) we motivate the need to extend MapReduce with constructs for asynchrony, (ii) we propose an API to facilitate partial synchronizations combined with eager scheduling and locality enhancing techniques, and (iii) demonstrate performance improvements from our proposed extensions through a variety of applications from different domains.</span>
+</p>
+
 <p><span class="font4"> INTRODUCTION</span></p>
-<p><span class="font4">Motivated by the large amounts of data generated by web-based applications, scientific experiments, business transactions, etc., and the need to analyze this data in effective, efficient, and scalable ways, there has been significant recent activity in developing suitable programming models, runtime systems, and development tools. The distributed nature of data sources, coupled with rapid advances in networking and storage technologies naturally motivate abstractions for supporting large-scale distributed applications.</span></p>
-<p><span class="font4">Asynchronous algorithms have been shown to enhance the scalability of a variety of algorithms in parallel environments. In particular, a number of unstructured graph problems have been shown to utilize asynchrony effectively to tradeoff serial operation counts with communication costs. The increased communication costs in distributed settings further motivates the use of asynchronous algorithms. However, implementing asynchronous algorithms within traditional distributed computing frameworks presents challenges. These challenges, their solutions, and resulting performance gains form the focus of this paper.</span></p>
-<p><span class="font4">To support large-scale distributed applications in unreliable wide-area environments, Dean and Ghemawat proposed a novel programming model based on maps and reduces, called MapReduce [4]. The inherent simplicity of this programming model, combined with underlying system support for scalable, fault-tolerant, distributed execution, make MapReduce an attractive platform for diverse data-intensive applications. Indeed, MapReduce has been used effectively in a wide variety of data processing applications. Large volumes of data processed at Google, Yahoo, Facebook, </span><span class="font4" style="font-style:italic;">etc.</span><span class="font4"> stand testimony to the effectiveness and scalability of MapReduce. The open-source implementation of MapRe-duce, Hadoop MapReduce<sup><a name="footnote1"></a><a href="#bookmark1">1</a></sup>, serves as a development testbed for a wide variety of distributed data-processing applications.</span></p>
-<p><span class="font4">A majority of the applications currently executing in the MapReduce framework have a data-parallel, uniform access profile, which makes them ideally suited to map and reduce abstractions. Recent research interest, however, has focused on more unstructured applications that do not lend themselves naturally to data-parallel formulations. Common examples of these include sparse unstructured graph operations (as encountered in diverse domains including social networks, financial transactions, and scientific datasets), discrete optimization and state-space search techniques (in business process optimization, planning), and discrete event modeling. For these applications, there are two major unresolved questions: (i) can the existing MapReduce framework effectively support such applications in a scalable manner? and (ii) what enhancements to the MapReduce framework would significantly enhance its performance and scalability without compromising desirable attributes of programmability and fault tolerance?</span></p>
+
+<p><span class="font4">Motivated by the large amounts of data generated by web-based applications, scientific experiments, business transactions, etc., and the need to analyze this data in effective, efficient, and scalable ways, there has been significant recent activity in developing suitable programming models, runtime systems, and development tools. The distributed nature of data sources, coupled with rapid advances in networking and storage technologies naturally motivate abstractions for supporting large-scale distributed applications.</span>
+</p>
+
+<p><span class="font4">Asynchronous algorithms have been shown to enhance the scalability of a variety of algorithms in parallel environments. In particular, a number of unstructured graph problems have been shown to utilize asynchrony effectively to tradeoff serial operation counts with communication costs. The increased communication costs in distributed settings further motivates the use of asynchronous algorithms. However, implementing asynchronous algorithms within traditional distributed computing frameworks presents challenges. These challenges, their solutions, and resulting performance gains form the focus of this paper.</span>
+</p>
+
+<p><span class="font4">To support large-scale distributed applications in unreliable wide-area environments, Dean and Ghemawat proposed a novel programming model based on maps and reduces, called MapReduce [4]. The inherent simplicity of this programming model, combined with underlying system support for scalable, fault-tolerant, distributed execution, make MapReduce an attractive platform for diverse data-intensive applications. Indeed, MapReduce has been used effectively in a wide variety of data processing applications. Large volumes of data processed at Google, Yahoo, Facebook, </span><span
+		class="font4" style="font-style:italic;">etc.</span><span class="font4"> stand testimony to the effectiveness and scalability of MapReduce. The open-source implementation of MapRe-duce, Hadoop MapReduce<sup><a
+		name="footnote1"></a><a href="#bookmark1">1</a></sup>, serves as a development testbed for a wide variety of distributed data-processing applications.</span>
+</p>
+
+<p><span class="font4">A majority of the applications currently executing in the MapReduce framework have a data-parallel, uniform access profile, which makes them ideally suited to map and reduce abstractions. Recent research interest, however, has focused on more unstructured applications that do not lend themselves naturally to data-parallel formulations. Common examples of these include sparse unstructured graph operations (as encountered in diverse domains including social networks, financial transactions, and scientific datasets), discrete optimization and state-space search techniques (in business process optimization, planning), and discrete event modeling. For these applications, there are two major unresolved questions: (i) can the existing MapReduce framework effectively support such applications in a scalable manner? and (ii) what enhancements to the MapReduce framework would significantly enhance its performance and scalability without compromising desirable attributes of programmability and fault tolerance?</span>
+</p>
+
 <p><span class="font4">This paper primarily focuses on the second question</span></p>
-<p><span class="font4">— namely, it seeks to extend the MapReduce semantics to support specific classes of unstructured applications on large-scale distributed environments. Recognizing that one of the key bottlenecks in supporting such applications is the global synchronization between the map and reduce</span></p>
-<p><span class="font4"><sup>1</sup> Hadoop. <a href="http://hadoop.apache.org/mapreduce/">http://hadoop.apache.org/mapreduce/</a> phases, it introduces notions of partial synchronization and eager scheduling. The underlying insight is that for an important class of applications, algorithms exist that do not need (frequent) global synchronization for correctness. Specifically, while global synchronizations optimize serial operation counts, violating these synchronizations merely increases operation counts without impacting correctness of the algorithm. Common examples of such algorithms include, computation of eigenvectors (pageranks) through (asynchronous) power methods, branch-and-bound based discrete optimization with lazy bound updates, computing all-pairs shortest paths in sparse graphs, constraint labeling and other heuristic state-space search algorithms. For such algorithms, a global synchronization can be replaced by concurrent partial synchronizations. However, these partial synchronizations must be augmented with suitable locality enhancing techniques to minimize their adverse effect on operation counts. These locality enhancing techniques typically take the form of min-cut graph partitioning and aggregation in graph analysis, periodic quality equalization in branch-and-bound, and other such operations that are well known in the parallel processing community. Replacing global synchronizations with partial synchronizations also allows us to schedule subsequent maps in an eager fashion. This has the important effect of smoothing load imbalances associated with typical applications.</span></p>
-<p><span class="font4">This paper combines partial synchronizations, locality enhancement, and eager scheduling, along with algorithmic asynchrony to deliver distributed performance improvements of up to 800% (and beyond in some cases). Importantly, our proposed enhancements to programming semantics do not impact application programmability. We demonstrate all of our results on an Amazon EC2 8-node cluster, which involves real-world cloud latencies, in the context of </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, </span><span class="font4" style="font-style:italic;">Shortest Path</span><span class="font4">, and clustering (</span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4">) implementations. These applications are selected because of their ubiquitous interaction patterns, and are representative of a broad set of application classes.</span></p>
-<p><span class="font4">The rest of the paper is organized as follows: section II provides a more comprehensive background on MapReduce, Hadoop, and motivates the problem; section III outlines our primary contributions and their significance; section IV provides an API to realize partial synchronizations; section V discusses our implementations of the proposed API, </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, </span><span class="font4" style="font-style:italic;">Shortest Path</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> clustering in the context of the API and analyze the performance gains of our approach. We outline avenues for ongoing work and conclusions in sections VIII and IX.</span></p>
+
+<p><span class="font4">— namely, it seeks to extend the MapReduce semantics to support specific classes of unstructured applications on large-scale distributed environments. Recognizing that one of the key bottlenecks in supporting such applications is the global synchronization between the map and reduce</span>
+</p>
+
+<p><span class="font4"><sup>1</sup> Hadoop. <a href="http://hadoop.apache.org/mapreduce/">http://hadoop.apache.org/mapreduce/</a> phases, it introduces notions of partial synchronization and eager scheduling. The underlying insight is that for an important class of applications, algorithms exist that do not need (frequent) global synchronization for correctness. Specifically, while global synchronizations optimize serial operation counts, violating these synchronizations merely increases operation counts without impacting correctness of the algorithm. Common examples of such algorithms include, computation of eigenvectors (pageranks) through (asynchronous) power methods, branch-and-bound based discrete optimization with lazy bound updates, computing all-pairs shortest paths in sparse graphs, constraint labeling and other heuristic state-space search algorithms. For such algorithms, a global synchronization can be replaced by concurrent partial synchronizations. However, these partial synchronizations must be augmented with suitable locality enhancing techniques to minimize their adverse effect on operation counts. These locality enhancing techniques typically take the form of min-cut graph partitioning and aggregation in graph analysis, periodic quality equalization in branch-and-bound, and other such operations that are well known in the parallel processing community. Replacing global synchronizations with partial synchronizations also allows us to schedule subsequent maps in an eager fashion. This has the important effect of smoothing load imbalances associated with typical applications.</span>
+</p>
+
+<p><span class="font4">This paper combines partial synchronizations, locality enhancement, and eager scheduling, along with algorithmic asynchrony to deliver distributed performance improvements of up to 800% (and beyond in some cases). Importantly, our proposed enhancements to programming semantics do not impact application programmability. We demonstrate all of our results on an Amazon EC2 8-node cluster, which involves real-world cloud latencies, in the context of </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">, </span><span class="font4"
+																																															 style="font-style:italic;">Shortest Path</span><span
+		class="font4">, and clustering (</span><span class="font4" style="font-style:italic;">K-Means</span><span
+		class="font4">) implementations. These applications are selected because of their ubiquitous interaction patterns, and are representative of a broad set of application classes.</span>
+</p>
+
+<p><span class="font4">The rest of the paper is organized as follows: section II provides a more comprehensive background on MapReduce, Hadoop, and motivates the problem; section III outlines our primary contributions and their significance; section IV provides an API to realize partial synchronizations; section V discusses our implementations of the proposed API, </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">, </span><span class="font4"
+																																															 style="font-style:italic;">Shortest Path</span><span
+		class="font4"> and </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> clustering in the context of the API and analyze the performance gains of our approach. We outline avenues for ongoing work and conclusions in sections VIII and IX.</span>
+</p>
+
 <p><span class="font4" style="font-variant:small-caps;">II. Background and Motivation</span></p>
-<p><span class="font4">The primary design motivation for the functional MapRe-duce abstractions is to allow programmers to express simple concurrent computations, while hiding the cumbersome details of parallelization, fault-tolerance, data distribution, and load balancing in a single library [4]. The simplicity of the API makes programming easy. Programs in MapReduce are expressed as map and reduce operations. The map phase takes in a list of key-value pairs and applies the programmer-specified map function independently on each pair in the list. The reduce phase operates on a list, indexed by a key, of all corresponding values and applies the reduce function on the values; and outputs a list of key-value pairs. Each phase involves distributed execution of tasks (application of the user-defined functions on a part of the data). The reduce phase must wait for all the map tasks to complete, since it requires all the values corresponding to each key. In order to reduce the network overhead, a combiner is often used to aggregate over keys from map tasks executing on the same node. Fault tolerance is achieved through deterministic-replay, i.e., re-scheduling failed computations on another running node. Most applications require iterations of MapReduce jobs. Once the reduce phase terminates, the next set of map tasks can be scheduled. As may be expected, for many applications, the dominant overhead in the program is associated with the global synchronizations between the map and reduce phases. When executed in wide-area distributed environments, these synchronizations often incur substantial latencies associated with underlying network and storage infrastructure.</span></p>
-<p><span class="font4">To alleviate the overhead of global synchronization, we propose partial synchronizations (synchronization only across a subset of maps) that take significantly less time depending on where the maps execute. We observe that in many parallel algorithms, frequent partial synchronizations can be used to reduce the number of global synchronizations. The resulting algorithm(s) may be suboptimal in serial operation counts, but can be more efficient and scalable in a MapReduce framework. A particularly relevant class of algorithms where such tradeoffs are possible are iterative techniques applied to unstructured problems (where the underlying data access patterns are unstructured). This broad class of algorithms underlies applications ranging from </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> to sparse solvers in scientific computing applications, and clustering algorithms. Our proposed API incorporates a two-level scheme to realize partial synchronization in MapReduce, described in detail in section IV.</span></p>
-<p><span class="font4">We illustrate the concept using a simple example — consider </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> computations over a network, where the rank of a node is determined by the rank of its neighbors. In the traditional MapReduce formulation, during each iteration, map involves each node pushing its </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> to all its outlinks and reduce accumulates all neighbors’ contributions to compute </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> for the corresponding node. These iterations continue until the </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> converge. An alternate formulation would partition the graph; each map task now corresponds to the local </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> computation of all nodes within the sub-graph (partition). For each of the internal nodes (nodes that have no edges leaving the partition), a partial reduction accurately computes the rank (assuming the neighbors’ ranks were accurate to begin with). On the other hand, boundary nodes (nodes that have edges leading to other partitions) require a global reduction to account for remote neighbors. It follows therefore that if the ranks of the boundary nodes were accurate, ranks of internal nodes can be computed simply through local iterations. Thus follows a two-level scheme, wherein partitions (maps) iterate on local data to convergence and then perform a global reduction. It is easy to see that this two-level scheme increases the serial operation count. Moreover, it increases the total number of synchronizations (partial + global) compared to the traditional formulation. However, and perhaps most importantly, it reduces the number of global reductions. Since this is the major overhead, the program has significantly better performance and scalability.</span></p>
-<p><span class="font4">Indeed optimizations such as these have been explored in the context of traditional HPC platforms as well with some success. However, the difference in overhead between a partial and global synchronization in relation to the intervening useful computation is not as large for HPC platforms. Consequently, the performance improvement from algorithmic asynchrony is significantly amplified on distributed platforms. It also follows thereby that performance improvements from MapReduce deployments on wide-area platforms, as compared to single processor executions are not expected to be significant unless the problem is scaled significantly to amortize overheads. However, MapReduce formulations are motivated primarily by the distributed nature of underlying data and sources, as opposed to the need for parallel speedup. For this reason, performance comparisons must be with respect to traditional MapReduce formulations, as opposed to speedup and efficiency measures more often used in the parallel programming community. While our development efforts and validation results are in the context of </span><span class="font4" style="font-style:italic;">PageRank, K-Means</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">Shortest Path </span><span class="font4">algorithms, concepts of partial reductions combined with locality enhancing techniques and eager map scheduling apply to broad classes of iterative asynchronous algorithms.</span></p>
+
+<p><span class="font4">The primary design motivation for the functional MapRe-duce abstractions is to allow programmers to express simple concurrent computations, while hiding the cumbersome details of parallelization, fault-tolerance, data distribution, and load balancing in a single library [4]. The simplicity of the API makes programming easy. Programs in MapReduce are expressed as map and reduce operations. The map phase takes in a list of key-value pairs and applies the programmer-specified map function independently on each pair in the list. The reduce phase operates on a list, indexed by a key, of all corresponding values and applies the reduce function on the values; and outputs a list of key-value pairs. Each phase involves distributed execution of tasks (application of the user-defined functions on a part of the data). The reduce phase must wait for all the map tasks to complete, since it requires all the values corresponding to each key. In order to reduce the network overhead, a combiner is often used to aggregate over keys from map tasks executing on the same node. Fault tolerance is achieved through deterministic-replay, i.e., re-scheduling failed computations on another running node. Most applications require iterations of MapReduce jobs. Once the reduce phase terminates, the next set of map tasks can be scheduled. As may be expected, for many applications, the dominant overhead in the program is associated with the global synchronizations between the map and reduce phases. When executed in wide-area distributed environments, these synchronizations often incur substantial latencies associated with underlying network and storage infrastructure.</span>
+</p>
+
+<p><span class="font4">To alleviate the overhead of global synchronization, we propose partial synchronizations (synchronization only across a subset of maps) that take significantly less time depending on where the maps execute. We observe that in many parallel algorithms, frequent partial synchronizations can be used to reduce the number of global synchronizations. The resulting algorithm(s) may be suboptimal in serial operation counts, but can be more efficient and scalable in a MapReduce framework. A particularly relevant class of algorithms where such tradeoffs are possible are iterative techniques applied to unstructured problems (where the underlying data access patterns are unstructured). This broad class of algorithms underlies applications ranging from </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> to sparse solvers in scientific computing applications, and clustering algorithms. Our proposed API incorporates a two-level scheme to realize partial synchronization in MapReduce, described in detail in section IV.</span>
+</p>
+
+<p><span class="font4">We illustrate the concept using a simple example — consider </span><span class="font4"
+																																																style="font-style:italic;">PageRank</span><span
+		class="font4"> computations over a network, where the rank of a node is determined by the rank of its neighbors. In the traditional MapReduce formulation, during each iteration, map involves each node pushing its </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> to all its outlinks and reduce accumulates all neighbors’ contributions to compute </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> for the corresponding node. These iterations continue until the </span><span
+		class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> converge. An alternate formulation would partition the graph; each map task now corresponds to the local </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> computation of all nodes within the sub-graph (partition). For each of the internal nodes (nodes that have no edges leaving the partition), a partial reduction accurately computes the rank (assuming the neighbors’ ranks were accurate to begin with). On the other hand, boundary nodes (nodes that have edges leading to other partitions) require a global reduction to account for remote neighbors. It follows therefore that if the ranks of the boundary nodes were accurate, ranks of internal nodes can be computed simply through local iterations. Thus follows a two-level scheme, wherein partitions (maps) iterate on local data to convergence and then perform a global reduction. It is easy to see that this two-level scheme increases the serial operation count. Moreover, it increases the total number of synchronizations (partial + global) compared to the traditional formulation. However, and perhaps most importantly, it reduces the number of global reductions. Since this is the major overhead, the program has significantly better performance and scalability.</span>
+</p>
+
+<p><span class="font4">Indeed optimizations such as these have been explored in the context of traditional HPC platforms as well with some success. However, the difference in overhead between a partial and global synchronization in relation to the intervening useful computation is not as large for HPC platforms. Consequently, the performance improvement from algorithmic asynchrony is significantly amplified on distributed platforms. It also follows thereby that performance improvements from MapReduce deployments on wide-area platforms, as compared to single processor executions are not expected to be significant unless the problem is scaled significantly to amortize overheads. However, MapReduce formulations are motivated primarily by the distributed nature of underlying data and sources, as opposed to the need for parallel speedup. For this reason, performance comparisons must be with respect to traditional MapReduce formulations, as opposed to speedup and efficiency measures more often used in the parallel programming community. While our development efforts and validation results are in the context of </span><span
+		class="font4" style="font-style:italic;">PageRank, K-Means</span><span class="font4"> and </span><span class="font4"
+																																																					 style="font-style:italic;">Shortest Path </span><span
+		class="font4">algorithms, concepts of partial reductions combined with locality enhancing techniques and eager map scheduling apply to broad classes of iterative asynchronous algorithms.</span>
+</p>
+
 <p><span class="font4" style="font-variant:small-caps;">III. Technical Contributions</span></p>
+
 <p><span class="font4">This paper makes the following specific contributions —</span></p>
-<p><span class="font4">• &nbsp;&nbsp;&nbsp;Motivates the use of MapReduce for implementing asynchronous algorithms in a distributed setting.</span></p>
-<p><span class="font4">• &nbsp;&nbsp;&nbsp;Proposes partial synchronizations and an associated API to alleviate the overhead due to the expensive global synchronization between map and reduce phases. Global synchronizations limit asynchrony.</span></p>
-<p><span class="font4">• &nbsp;&nbsp;&nbsp;Demonstrates the use of partial synchronization and eager scheduling in combination with coarse-grained, locality enhancing techniques.</span></p>
-<p><span class="font4">• &nbsp;&nbsp;&nbsp;Evaluates the applicability and performance improvements due to the aforementioned techniques on a variety of applications - </span><span class="font4" style="font-style:italic;">PageRank, Shortest Path,</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4">.</span></p>
+
+<p><span class="font4">• &nbsp;&nbsp;&nbsp;Motivates the use of MapReduce for implementing asynchronous algorithms in a distributed setting.</span>
+</p>
+
+<p><span class="font4">• &nbsp;&nbsp;&nbsp;Proposes partial synchronizations and an associated API to alleviate the overhead due to the expensive global synchronization between map and reduce phases. Global synchronizations limit asynchrony.</span>
+</p>
+
+<p><span class="font4">• &nbsp;&nbsp;&nbsp;Demonstrates the use of partial synchronization and eager scheduling in combination with coarse-grained, locality enhancing techniques.</span>
+</p>
+
+<p><span class="font4">• &nbsp;&nbsp;&nbsp;Evaluates the applicability and performance improvements due to the aforementioned techniques on a variety of applications - </span><span
+		class="font4" style="font-style:italic;">PageRank, Shortest Path,</span><span class="font4"> and </span><span
+		class="font4" style="font-style:italic;">K-Means</span><span class="font4">.</span></p>
+
 <p><span class="font4" style="font-variant:small-caps;">IV. Proposed API</span></p>
-<p><span class="font4">In this section, we present our API for the proposed partial synchronization and discuss its effectiveness. Our API is built on the rigorous semantics for iterative MapReduce, we propose in the associated technical report [7]. As mentioned earlier, our API for iterative MapReduce comprises a two-level scheme — </span><span class="font4" style="font-style:italic;">local</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">global</span><span class="font4"> MapReduce. We refer to the regular MapReduce with global synchronizations as global MapReduce, and MapReduce with local/partial synchronization as local MapReduce. A </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> takes a partition as input, and involves invocation of </span><span class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> functions iteratively on the partition. The </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> operation applies the specified reduction function to only those key-value pairs emanating from </span><span class="font4" style="font-style:italic;">local map </span><span class="font4">functions. Since partial synchronization suffices, </span><span class="font4" style="font-style:italic;">local map </span><span class="font4">operations corresponding to the next iteration can be eagerly scheduled. The </span><span class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> operations can use a thread-pool to extract further parallelism.</span></p>
-<p><span class="font4">Often, the local and global map/reduce operations are functionally the same and differ only in the data they are applied on. Given a regular MapReduce implementation, it is fairly straight-forward to generate the </span><span class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> functions using the semantics explained in the technical report [7], thus not increasing the programming complexity. In the traditional MapReduce API, the user provides map and reduce functions along with the functions to split and format the input data. To generate the </span><span class="font4" style="font-style:italic;">local map </span><span class="font4">and </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> functions, the user must provide functions for termination of global and local MapReduce iterations, and functions to convert data into the formats required by the </span><span class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> functions.</span></p>
-<p><span class="font4">However, to accommodate greater flexibility, we propose use of four functions — gmap, greduce, lmap and lreduce; gmap invoking lmap and lreduce functions, as described in section V. Functions </span><span class="font4" style="font-style:italic;">Emit()</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">EmitIn-termediate()</span><span class="font4"> support data-flow in traditional MapReduce. We introduce their local equivalents — </span><span class="font4" style="font-style:italic;">EmitLocal()</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">EmitLocalIntermediate().</span><span class="font4"> Function lreduce operates on the data emitted through </span><span class="font4" style="font-style:italic;">EmitLocalIntermediate</span><span class="font4">(). At the end of local iterations, the output through </span><span class="font4" style="font-style:italic;">EmitLocal()</span><span class="font4"> is sent to the greduce; otherwise, lmap receives it as input. Section V describes our implementation of the API and our implementations of </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, </span><span class="font4" style="font-style:italic;">Shortest Path</span><span class="font4">, and </span><span class="font4" style="font-style:italic;">K-Means </span><span class="font4">using the proposed API; demonstrating its ease of use and effectiveness in improving the performance of applications using asynchronous algorithms.</span></p>
+
+<p><span class="font4">In this section, we present our API for the proposed partial synchronization and discuss its effectiveness. Our API is built on the rigorous semantics for iterative MapReduce, we propose in the associated technical report [7]. As mentioned earlier, our API for iterative MapReduce comprises a two-level scheme — </span><span
+		class="font4" style="font-style:italic;">local</span><span class="font4"> and </span><span class="font4"
+																																															 style="font-style:italic;">global</span><span
+		class="font4"> MapReduce. We refer to the regular MapReduce with global synchronizations as global MapReduce, and MapReduce with local/partial synchronization as local MapReduce. A </span><span
+		class="font4" style="font-style:italic;">global map</span><span class="font4"> takes a partition as input, and involves invocation of </span><span
+		class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4"
+																																																	 style="font-style:italic;">local reduce</span><span
+		class="font4"> functions iteratively on the partition. The </span><span class="font4" style="font-style:italic;">local reduce</span><span
+		class="font4"> operation applies the specified reduction function to only those key-value pairs emanating from </span><span
+		class="font4" style="font-style:italic;">local map </span><span class="font4">functions. Since partial synchronization suffices, </span><span
+		class="font4" style="font-style:italic;">local map </span><span class="font4">operations corresponding to the next iteration can be eagerly scheduled. The </span><span
+		class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4"
+																																																	 style="font-style:italic;">local reduce</span><span
+		class="font4"> operations can use a thread-pool to extract further parallelism.</span></p>
+
+<p><span class="font4">Often, the local and global map/reduce operations are functionally the same and differ only in the data they are applied on. Given a regular MapReduce implementation, it is fairly straight-forward to generate the </span><span
+		class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4"
+																																																	 style="font-style:italic;">local reduce</span><span
+		class="font4"> functions using the semantics explained in the technical report [7], thus not increasing the programming complexity. In the traditional MapReduce API, the user provides map and reduce functions along with the functions to split and format the input data. To generate the </span><span
+		class="font4" style="font-style:italic;">local map </span><span class="font4">and </span><span class="font4"
+																																																	 style="font-style:italic;">local reduce</span><span
+		class="font4"> functions, the user must provide functions for termination of global and local MapReduce iterations, and functions to convert data into the formats required by the </span><span
+		class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4"
+																																																	 style="font-style:italic;">local reduce</span><span
+		class="font4"> functions.</span></p>
+
+<p><span class="font4">However, to accommodate greater flexibility, we propose use of four functions — gmap, greduce, lmap and lreduce; gmap invoking lmap and lreduce functions, as described in section V. Functions </span><span
+		class="font4" style="font-style:italic;">Emit()</span><span class="font4"> and </span><span class="font4"
+																																																style="font-style:italic;">EmitIn-termediate()</span><span
+		class="font4"> support data-flow in traditional MapReduce. We introduce their local equivalents — </span><span
+		class="font4" style="font-style:italic;">EmitLocal()</span><span class="font4"> and </span><span class="font4"
+																																																		 style="font-style:italic;">EmitLocalIntermediate().</span><span
+		class="font4"> Function lreduce operates on the data emitted through </span><span class="font4"
+																																											style="font-style:italic;">EmitLocalIntermediate</span><span
+		class="font4">(). At the end of local iterations, the output through </span><span class="font4"
+																																											style="font-style:italic;">EmitLocal()</span><span
+		class="font4"> is sent to the greduce; otherwise, lmap receives it as input. Section V describes our implementation of the API and our implementations of </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">, </span><span class="font4"
+																																															 style="font-style:italic;">Shortest Path</span><span
+		class="font4">, and </span><span class="font4" style="font-style:italic;">K-Means </span><span class="font4">using the proposed API; demonstrating its ease of use and effectiveness in improving the performance of applications using asynchronous algorithms.</span>
+</p>
+
 <p><span class="font4" style="font-variant:small-caps;">V. Implementation and evaluation</span></p>
-<p><span class="font4">In this section, we describe our implementation of the API and the performance benefits from the proposed techniques of locality-enhanced partitioning, partial synchronization,</span></p>
+
+<p><span class="font4">In this section, we describe our implementation of the API and the performance benefits from the proposed techniques of locality-enhanced partitioning, partial synchronization,</span>
+</p>
+
 <p><span class="font2" style="font-weight:bold;">Table I</span></p>
+
 <p><span class="font2" style="font-weight:bold;font-variant:small-caps;">Measurement testbed, Software</span></p>
 <table border="1">
-<tr><td>
-<p><span class="font4" style="font-weight:bold;">Amazon EC2 8 Large Instances</span></p></td><td>
-<p><span class="font3">8 64 bit EC2 Compute Units 15 GB RAM, 4 x 420 GB storage</span></p></td></tr>
-<tr><td>
-<p><span class="font4" style="font-weight:bold;">Software Heap space</span></p></td><td>
-<p><span class="font3">Hadoop 0.20.1, Java 1.6 4 GB per slave</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font4" style="font-weight:bold;">Amazon EC2 8 Large Instances</span></p>
+		</td>
+		<td>
+			<p><span class="font3">8 64 bit EC2 Compute Units 15 GB RAM, 4 x 420 GB storage</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4" style="font-weight:bold;">Software Heap space</span></p>
+		</td>
+		<td>
+			<p><span class="font3">Hadoop 0.20.1, Java 1.6 4 GB per slave</span></p>
+		</td>
+	</tr>
 </table>
-<p><span class="font4">and eager scheduling. We consider three applications — </span><span class="font4" style="font-style:italic;">PageRank, Shortest Path,</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> to compare general MapReduce implementations with their modified implementations.</span></p>
-<p><span class="font4">Our experiments were run on an 8-node Amazon EC2 cluster of extra large instances. This reflects the characteristics of a typical cloud environment. Also, it allows us to monitor the utilization and execution of </span><span class="font1">map </span><span class="font4">and </span><span class="font1">reduce </span><span class="font4">tasks. Table I presents the physical resources, software, and restrictions on the cluster.</span></p>
+<p><span class="font4">and eager scheduling. We consider three applications — </span><span class="font4"
+																																													 style="font-style:italic;">PageRank, Shortest Path,</span><span
+		class="font4"> and </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> to compare general MapReduce implementations with their modified implementations.</span>
+</p>
+
+<p><span class="font4">Our experiments were run on an 8-node Amazon EC2 cluster of extra large instances. This reflects the characteristics of a typical cloud environment. Also, it allows us to monitor the utilization and execution of </span><span
+		class="font1">map </span><span class="font4">and </span><span class="font1">reduce </span><span class="font4">tasks. Table I presents the physical resources, software, and restrictions on the cluster.</span>
+</p>
+
 <p><span class="font4" style="font-style:italic;">A. API Implementation</span></p>
-<p><span class="font4">As in regular MapReduce, our execution also involves </span><span class="font1">map </span><span class="font4">and </span><span class="font1">reduce </span><span class="font4">phases; each phase executing tasks on nodes. Each </span><span class="font1">map/reduce </span><span class="font4">task involves the application of </span><span class="font1">gmap/greduce </span><span class="font4">functions to corresponding data. Within the </span><span class="font1">gmap </span><span class="font4">function we execute </span><span class="font4" style="font-style:italic;">local MapReduce</span><span class="font4"> iterations.</span></p><img src="async-alg-in-mr_files/async-alg-in-mr-1.png" style="width:245pt;height:119pt;"/>
-<p><span class="font2" style="font-weight:bold;">Figure 1. Construction of </span><span class="font0">gmap </span><span class="font2" style="font-weight:bold;">from </span><span class="font0">lmap </span><span class="font2" style="font-weight:bold;">and </span><span class="font0">lreduce</span></p>
-<p><span class="font4">Figure 1 describes our construction of </span><span class="font1">gmap </span><span class="font4">from the user-defined functions </span><span class="font1">— lmap </span><span class="font4">and </span><span class="font1">lreduce. </span><span class="font4">The argument to </span><span class="font1">gmap </span><span class="font4">is a &lt;key, value&gt; list(.v.v), on which the </span><span class="font4" style="font-style:italic;">local </span><span class="font4">MapReduce operates, </span><span class="font1">lmap </span><span class="font4">takes an element of .v.v as input, and emits its output by invoking </span><span class="font4" style="font-style:italic;">EmitLocalIntermediate(). </span><span class="font4">Once all the </span><span class="font1">lmap </span><span class="font4">functions execute, </span><span class="font1">lreduce </span><span class="font4">operates on the local intermediate data. A hashtable is used to store the intermediate and final results of the </span><span class="font4" style="font-style:italic;">local</span><span class="font4"> MapReduce. Upon local convergence, </span><span class="font1">gmap </span><span class="font4">outputs the contents of this hashtable. </span><span class="font1">greduce </span><span class="font4">acts on </span><span class="font1">gmap’s </span><span class="font4">output. Such an implementation allows the use of other optimizations like combiners in conjunction. A combiner, as described in the original MapReduce paper [4], operates on the output of all </span><span class="font1">gmap </span><span class="font4">tasks on a single node to decrease the network traffic during the synchronization.</span></p>
-<p><span class="font4">The rest of the section describes benchmark applications, their regular and eager (partial synchronization with eager scheduling) implementations, and corresponding performance gains. We discuss </span><span class="font4" style="font-style:italic;">Page Rank</span><span class="font4"> in detail to illustrate our approach; </span><span class="font4" style="font-style:italic;">Shortest Path</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> are discussed briefly in the interest of space.</span></p>
+
+<p><span class="font4">As in regular MapReduce, our execution also involves </span><span class="font1">map </span><span
+		class="font4">and </span><span class="font1">reduce </span><span class="font4">phases; each phase executing tasks on nodes. Each </span><span
+		class="font1">map/reduce </span><span class="font4">task involves the application of </span><span class="font1">gmap/greduce </span><span
+		class="font4">functions to corresponding data. Within the </span><span class="font1">gmap </span><span
+		class="font4">function we execute </span><span class="font4" style="font-style:italic;">local MapReduce</span><span
+		class="font4"> iterations.</span></p>
+<img src="async-alg-in-mr_files/async-alg-in-mr-1.png"
+		 style="width:245pt;height:119pt;"/>
+
+<p><span class="font2" style="font-weight:bold;">Figure 1. Construction of </span><span class="font0">gmap </span><span
+		class="font2" style="font-weight:bold;">from </span><span class="font0">lmap </span><span class="font2"
+																																															style="font-weight:bold;">and </span><span
+		class="font0">lreduce</span></p>
+
+<p><span class="font4">Figure 1 describes our construction of </span><span class="font1">gmap </span><span
+		class="font4">from the user-defined functions </span><span class="font1">— lmap </span><span
+		class="font4">and </span><span class="font1">lreduce. </span><span class="font4">The argument to </span><span
+		class="font1">gmap </span><span class="font4">is a &lt;key, value&gt; list(.v.v), on which the </span><span
+		class="font4" style="font-style:italic;">local </span><span class="font4">MapReduce operates, </span><span
+		class="font1">lmap </span><span
+		class="font4">takes an element of .v.v as input, and emits its output by invoking </span><span class="font4"
+																																																	 style="font-style:italic;">EmitLocalIntermediate(). </span><span
+		class="font4">Once all the </span><span class="font1">lmap </span><span
+		class="font4">functions execute, </span><span class="font1">lreduce </span><span class="font4">operates on the local intermediate data. A hashtable is used to store the intermediate and final results of the </span><span
+		class="font4" style="font-style:italic;">local</span><span class="font4"> MapReduce. Upon local convergence, </span><span
+		class="font1">gmap </span><span class="font4">outputs the contents of this hashtable. </span><span class="font1">greduce </span><span
+		class="font4">acts on </span><span class="font1">gmap’s </span><span class="font4">output. Such an implementation allows the use of other optimizations like combiners in conjunction. A combiner, as described in the original MapReduce paper [4], operates on the output of all </span><span
+		class="font1">gmap </span><span class="font4">tasks on a single node to decrease the network traffic during the synchronization.</span>
+</p>
+
+<p><span class="font4">The rest of the section describes benchmark applications, their regular and eager (partial synchronization with eager scheduling) implementations, and corresponding performance gains. We discuss </span><span
+		class="font4" style="font-style:italic;">Page Rank</span><span
+		class="font4"> in detail to illustrate our approach; </span><span class="font4" style="font-style:italic;">Shortest Path</span><span
+		class="font4"> and </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> are discussed briefly in the interest of space.</span>
+</p>
+
 <p><span class="font4" style="font-style:italic;">B. </span><span class="font4">PageRank</span></p>
-<p><span class="font4">The </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of a node is the scaled sum of the </span><span class="font4" style="font-style:italic;">PageR-anks</span><span class="font4"> of all its incoming neighbors, given by the following expression:</span></p>
-<p><span class="font4"><img src="async-alg-in-mr_files/async-alg-in-mr-2.png" style="width:241pt;height:45pt;"/></span></p>
-<p><span class="font4">where x is the damping factor, </span><span class="font4" style="font-style:italic;">s.pagerank</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">s.outlinks </span><span class="font4">correspond to the </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> and the out-degree of the source node, respectively.</span></p>
-<p><span class="font4">The asynchronous </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> algorithm involves an iterative two step method. In the first step, the </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of each node is sent to all its outlinks. In the second step, the </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> received at each node are aggregated to compute the new </span><span class="font4" style="font-style:italic;">PageRank.</span><span class="font4"> The </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> change in each iteration, and eventually converge to the final </span><span class="font4" style="font-style:italic;">PageRanks. </span><span class="font4">For regular as well as eager implementations, we use a graph represented as adjacency lists as input. All nodes have an initial </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of 1. We define convergence by a bound on the norm of difference (infinite norm of I () in our case).</span></p>
-<p><span class="font4" style="font-style:italic;">1) General</span><span class="font4"> PageRank: The general MapReduce implementation of </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> iterates over a </span><span class="font1">map </span><span class="font4">task that emits the </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> of all the source nodes to the corresponding destinations in the graph, and a </span><span class="font1">reduce </span><span class="font4">task that accumulates </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> contributions from various sources to a single destination. In the actual implementation, the </span><span class="font1">map </span><span class="font4">function emits tuples of the type &lt;&nbsp;</span><span class="font4" style="font-style:italic;">d<sub>n</sub>,p<sub>n</span><span class="font4"></sub> &gt;, where </span><span class="font4" style="font-style:italic;">d<sub>n</span><span class="font4"></sub> is the destination-node, and </span><span class="font4" style="font-style:italic;">p„</span><span class="font4"> is the </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> contributed to this destination node by the source. The </span><span class="font1">reduce </span><span class="font4">task operates on a destination node, gathering the </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> from the incoming source nodes and computes a new </span><span class="font4" style="font-style:italic;">PageRank.</span><span class="font4"> After every iteration, the nodes have renewed </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> which propagate through the graph in subsequent iterations until they converge. One can observe that a small change in the </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of a single node is broadcast to all the nodes in the graph in successive iterations of MapReduce, incurring a potentially significant cost.</span></p>
-<p><span class="font4">Our baseline for performance comparison is a MapReduce implementation for which </span><span class="font1">maps </span><span class="font4">operate on complete partitions, as opposed to single node adjacency lists. We use this as a baseline because the performance of this formulation was noted to be on par or better than the adjacency-list formulation. For this reason, our baseline provides a more competitive implementation.</span></p>
-<p><span class="font4" style="font-style:italic;">2) Eager</span><span class="font4"> PageRank: We begin our description of Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> with an intuitive illustration of how the underlying algorithm accommodates asynchrony. In a graph with specific structure (say, a power-law type distribution), one may assume that each hub is surrounded by a large number of spokes, and that inter-component edges are relatively fewer. This allows us to relax strict synchronization on intercomponent edges until the sub-graph in the proximity of a hub has relatively self-consistent </span><span class="font4" style="font-style:italic;">PageRanks.</span><span class="font4"> Disregarding the inter-component edges does not lead to algorithmic inconsistency since, after few local iterations of MapReduce calculating the </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> in the sub-graph, there is a global synchronization (following a </span><span class="font4" style="font-style:italic;">global map),</span><span class="font4"> leading to a dissemination of the </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> in this sub-graph to other subgraphs via inter-component edges. This propagation imposes consistency on the global state. Consequently, we update only the (neighboring) nodes in the smaller sub-graph. We achieve this by a set of iterations of </span><span class="font4" style="font-style:italic;">local</span><span class="font4"> MapReduce as described in the API implementation. This method leads to improved efficiency if each </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> operates on a component or a group of topologically localized nodes. Such topology is inherent in the way we collect data as it is crawler-induced. One can also use one-time graph partitioning using tools like Metis<sup><a name="footnote2"></a><a href="#bookmark2">2</a></sup>. We use Metis since our test data set is not partitioned a-priori.</span></p>
-<p><span class="font4">In the Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> implementation, the map task operates on a sub-graph. </span><span class="font4" style="font-style:italic;">Local</span><span class="font4"> MapReduce, within the </span><span class="font4" style="font-style:italic;">global map</span><span class="font4">, computes the </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of the constituent nodes in the sub-graph. Hence, we run the </span><span class="font4" style="font-style:italic;">local</span><span class="font4"> MapReduce to convergence. Instead of waiting for all the other </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> tasks operating on different sub-graphs, we eagerly schedule the next </span><span class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> iterations on the individual sub-graph inside a single </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> task. Upon local convergence on the sub-graphs, we synchronize globally, so that all nodes can propagate their computed </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> to other sub-graphs. This iteration over </span><span class="font4" style="font-style:italic;">global </span><span class="font4">MapReduce runs to convergence. Such an Eager </span><span class="font4" style="font-style:italic;">PageR-ank</span><span class="font4"> incurs more computational cost, since local reductions may proceed with imprecise values of global </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4">. However, the </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of any node propagated by the </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> is representative, in a way, of the sub-graph it belongs to. Thus, one may observe that the </span><span class="font4" style="font-style:italic;">local reduce </span><span class="font4">and </span><span class="font4" style="font-style:italic;">global reduce</span><span class="font4"> functions are functionally identical. As the sub-graphs (partitions) have approximately the same number of edges, we expect similar number of local iterations in each </span><span class="font4" style="font-style:italic;">global map.</span><span class="font4"> However, if the convergence rates are very different, the global synchronization requires waiting for all partitions to converge.</span></p>
-<p><span class="font4">Note that in Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> waits on a </span><span class="font4" style="font-style:italic;">local</span><span class="font4"> synchronization barrier, while the </span><span class="font4" style="font-style:italic;">local maps</span><span class="font4"> can be implemented using a thread pool on a single host in a cluster. The local synchronization does not incur any inter-host</span></p>
+
+<p><span class="font4">The </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of a node is the scaled sum of the </span><span
+		class="font4" style="font-style:italic;">PageR-anks</span><span class="font4"> of all its incoming neighbors, given by the following expression:</span>
+</p>
+
+<p><span class="font4"><img src="async-alg-in-mr_files/async-alg-in-mr-2.png" style="width:241pt;height:45pt;"/></span>
+</p>
+
+<p><span class="font4">where x is the damping factor, </span><span class="font4"
+																																	 style="font-style:italic;">s.pagerank</span><span
+		class="font4"> and </span><span class="font4" style="font-style:italic;">s.outlinks </span><span class="font4">correspond to the </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> and the out-degree of the source node, respectively.</span>
+</p>
+
+<p><span class="font4">The asynchronous </span><span class="font4" style="font-style:italic;">PageRank</span><span
+		class="font4"> algorithm involves an iterative two step method. In the first step, the </span><span class="font4"
+																																																				style="font-style:italic;">PageRank</span><span
+		class="font4"> of each node is sent to all its outlinks. In the second step, the </span><span class="font4"
+																																																	style="font-style:italic;">PageRanks</span><span
+		class="font4"> received at each node are aggregated to compute the new </span><span class="font4"
+																																												style="font-style:italic;">PageRank.</span><span
+		class="font4"> The </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> change in each iteration, and eventually converge to the final </span><span
+		class="font4" style="font-style:italic;">PageRanks. </span><span class="font4">For regular as well as eager implementations, we use a graph represented as adjacency lists as input. All nodes have an initial </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of 1. We define convergence by a bound on the norm of difference (infinite norm of I () in our case).</span>
+</p>
+
+<p><span class="font4" style="font-style:italic;">1) General</span><span class="font4"> PageRank: The general MapReduce implementation of </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> iterates over a </span><span
+		class="font1">map </span><span class="font4">task that emits the </span><span class="font4"
+																																									style="font-style:italic;">PageRanks</span><span
+		class="font4"> of all the source nodes to the corresponding destinations in the graph, and a </span><span
+		class="font1">reduce </span><span class="font4">task that accumulates </span><span class="font4"
+																																											 style="font-style:italic;">PageRank</span><span
+		class="font4"> contributions from various sources to a single destination. In the actual implementation, the </span><span
+		class="font1">map </span><span class="font4">function emits tuples of the type &lt;&nbsp;</span><span class="font4"
+																																																					style="font-style:italic;">d<sub>n</sub>,p<sub>n</sub></span><span
+		class="font4"></sub>  &gt;, where </span><span class="font4" style="font-style:italic;">d<sub>n</sub></span><span
+		class="font4"></sub> is the destination-node, and </span><span class="font4"
+																																	 style="font-style:italic;">p„</span><span
+		class="font4"> is the </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> contributed to this destination node by the source. The </span><span
+		class="font1">reduce </span><span class="font4">task operates on a destination node, gathering the </span><span
+		class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> from the incoming source nodes and computes a new </span><span
+		class="font4" style="font-style:italic;">PageRank.</span><span class="font4"> After every iteration, the nodes have renewed </span><span
+		class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> which propagate through the graph in subsequent iterations until they converge. One can observe that a small change in the </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> of a single node is broadcast to all the nodes in the graph in successive iterations of MapReduce, incurring a potentially significant cost.</span>
+</p>
+
+<p><span class="font4">Our baseline for performance comparison is a MapReduce implementation for which </span><span
+		class="font1">maps </span><span class="font4">operate on complete partitions, as opposed to single node adjacency lists. We use this as a baseline because the performance of this formulation was noted to be on par or better than the adjacency-list formulation. For this reason, our baseline provides a more competitive implementation.</span>
+</p>
+
+<p><span class="font4" style="font-style:italic;">2) Eager</span><span class="font4"> PageRank: We begin our description of Eager </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> with an intuitive illustration of how the underlying algorithm accommodates asynchrony. In a graph with specific structure (say, a power-law type distribution), one may assume that each hub is surrounded by a large number of spokes, and that inter-component edges are relatively fewer. This allows us to relax strict synchronization on intercomponent edges until the sub-graph in the proximity of a hub has relatively self-consistent </span><span
+		class="font4" style="font-style:italic;">PageRanks.</span><span class="font4"> Disregarding the inter-component edges does not lead to algorithmic inconsistency since, after few local iterations of MapReduce calculating the </span><span
+		class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> in the sub-graph, there is a global synchronization (following a </span><span
+		class="font4" style="font-style:italic;">global map),</span><span
+		class="font4"> leading to a dissemination of the </span><span class="font4"
+																																	style="font-style:italic;">PageRanks</span><span
+		class="font4"> in this sub-graph to other subgraphs via inter-component edges. This propagation imposes consistency on the global state. Consequently, we update only the (neighboring) nodes in the smaller sub-graph. We achieve this by a set of iterations of </span><span
+		class="font4" style="font-style:italic;">local</span><span class="font4"> MapReduce as described in the API implementation. This method leads to improved efficiency if each </span><span
+		class="font4" style="font-style:italic;">global map</span><span class="font4"> operates on a component or a group of topologically localized nodes. Such topology is inherent in the way we collect data as it is crawler-induced. One can also use one-time graph partitioning using tools like Metis<sup><a
+		name="footnote2"></a><a href="#bookmark2">2</a></sup>. We use Metis since our test data set is not partitioned a-priori.</span>
+</p>
+
+<p><span class="font4">In the Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span
+		class="font4"> implementation, the map task operates on a sub-graph. </span><span class="font4"
+																																											style="font-style:italic;">Local</span><span
+		class="font4"> MapReduce, within the </span><span class="font4" style="font-style:italic;">global map</span><span
+		class="font4">, computes the </span><span class="font4" style="font-style:italic;">PageRank</span><span
+		class="font4"> of the constituent nodes in the sub-graph. Hence, we run the </span><span class="font4"
+																																														 style="font-style:italic;">local</span><span
+		class="font4"> MapReduce to convergence. Instead of waiting for all the other </span><span class="font4"
+																																															 style="font-style:italic;">global map</span><span
+		class="font4"> tasks operating on different sub-graphs, we eagerly schedule the next </span><span class="font4"
+																																																			style="font-style:italic;">local map</span><span
+		class="font4"> and </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> iterations on the individual sub-graph inside a single </span><span
+		class="font4" style="font-style:italic;">global map</span><span class="font4"> task. Upon local convergence on the sub-graphs, we synchronize globally, so that all nodes can propagate their computed </span><span
+		class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> to other sub-graphs. This iteration over </span><span
+		class="font4" style="font-style:italic;">global </span><span class="font4">MapReduce runs to convergence. Such an Eager </span><span
+		class="font4" style="font-style:italic;">PageR-ank</span><span class="font4"> incurs more computational cost, since local reductions may proceed with imprecise values of global </span><span
+		class="font4" style="font-style:italic;">PageRanks</span><span class="font4">. However, the </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span
+		class="font4"> of any node propagated by the </span><span class="font4"
+																															style="font-style:italic;">local reduce</span><span
+		class="font4"> is representative, in a way, of the sub-graph it belongs to. Thus, one may observe that the </span><span
+		class="font4" style="font-style:italic;">local reduce </span><span class="font4">and </span><span class="font4"
+																																																			style="font-style:italic;">global reduce</span><span
+		class="font4"> functions are functionally identical. As the sub-graphs (partitions) have approximately the same number of edges, we expect similar number of local iterations in each </span><span
+		class="font4" style="font-style:italic;">global map.</span><span class="font4"> However, if the convergence rates are very different, the global synchronization requires waiting for all partitions to converge.</span>
+</p>
+
+<p><span class="font4">Note that in Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span
+		class="font4">, </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> waits on a </span><span
+		class="font4" style="font-style:italic;">local</span><span class="font4"> synchronization barrier, while the </span><span
+		class="font4" style="font-style:italic;">local maps</span><span class="font4"> can be implemented using a thread pool on a single host in a cluster. The local synchronization does not incur any inter-host</span>
+</p>
+
 <p><span class="font4">Table II</span></p>
+
 <p><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> INPUT GRAPH PROPERTIES</span></p>
 <table border="1">
-<tr><td>
-<p><span class="font4" style="font-weight:bold;">Input graphs</span></p></td><td>
-<p><span class="font4" style="font-weight:bold;">Graph A</span></p></td><td>
-<p><span class="font4" style="font-weight:bold;">Graph B</span></p></td></tr>
-<tr><td>
-<p><span class="font4" style="font-weight:bold;">Nodes</span></p>
-<p><span class="font4" style="font-weight:bold;">Edges</span></p>
-<p><span class="font4" style="font-weight:bold;">Damping factor</span></p></td><td>
-<p><span class="font4">280,000 3 million 0.85</span></p></td><td>
-<p><span class="font4">100,000 3 million 0.85</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font4" style="font-weight:bold;">Input graphs</span></p>
+		</td>
+		<td>
+			<p><span class="font4" style="font-weight:bold;">Graph A</span></p>
+		</td>
+		<td>
+			<p><span class="font4" style="font-weight:bold;">Graph B</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4" style="font-weight:bold;">Nodes</span></p>
+
+			<p><span class="font4" style="font-weight:bold;">Edges</span></p>
+
+			<p><span class="font4" style="font-weight:bold;">Damping factor</span></p>
+		</td>
+		<td>
+			<p><span class="font4">280,000 3 million 0.85</span></p>
+		</td>
+		<td>
+			<p><span class="font4">100,000 3 million 0.85</span></p>
+		</td>
+	</tr>
 </table>
-<p><span class="font4">communication delays. This makes associated overheads considerably lower than the </span><span class="font4" style="font-style:italic;">global</span><span class="font4"> overheads.</span></p>
-<p><span class="font4" style="font-style:italic;">3) &nbsp;&nbsp;&nbsp;Input data:</span><span class="font4"> Table II describes the two graphs used as input for our experiments on </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, both conforming to power-law distributions. Graph A has 280K nodes and about 3 million edges. Graph B has 100K nodes and about 3 million edges. We use preferential attachment [3] to generate the graphs using igraph<sup>3</sup>. The algorithm used to create the synthetic graphs is described below, along with its justification.</span></p>
+<p><span class="font4">communication delays. This makes associated overheads considerably lower than the </span><span
+		class="font4" style="font-style:italic;">global</span><span class="font4"> overheads.</span></p>
+
+<p><span class="font4" style="font-style:italic;">3) &nbsp;&nbsp;&nbsp;Input data:</span><span class="font4"> Table II describes the two graphs used as input for our experiments on </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">, both conforming to power-law distributions. Graph A has 280K nodes and about 3 million edges. Graph B has 100K nodes and about 3 million edges. We use preferential attachment [3] to generate the graphs using igraph<sup>3</sup>. The algorithm used to create the synthetic graphs is described below, along with its justification.</span>
+</p>
+
 <p><span class="font4" style="font-weight:bold;">Preferential attachment based graph generation.</span></p>
-<p><span class="font4">Test graphs are generated by adding vertices one at a time — connecting them to </span><span class="font4" style="font-style:italic;">numConn</span><span class="font4"> vertices already in the network, chosen uniformly at random. For each of these </span><span class="font4" style="font-style:italic;">numConn</span><span class="font4"> vertices, </span><span class="font4" style="font-style:italic;">numIn</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">numOut</span><span class="font4"> of its inlinks and outlinks are chosen uniformly at random and connected to the joining vertex. This is done for all the newly connected nodes to the incoming vertex. This method of creating a graph is closely related to the evolution of online communities, social networks, the web, </span><span class="font4" style="font-style:italic;">etc.</span><span class="font4"> This procedure increases the probability of highly reputed nodes getting linked to new nodes, since they have greater likelihood of being in an inlink from other randomly chosen sites. The best-fit for inlinks in the two input graphs yields the power-law exponent for the graphs, demonstrating their conformity with the hubs-and-spokes model. Very few nodes have a very high inlink values, emphasizing our point that very few nodes require frequent global synchronization. More often than not, even these nodes (hubs) mostly have spokes as their neighbors.</span></p>
-<p><span class="font4">Crawlers inherently induce locality in the graphs as they crawl neighborhoods before crawling remote sites. We partition graphs using Metis. A good partitioning algorithm that minimizes edge-cuts has the desired effect of reducing global synchronizations as well. This partitioning is performed off-line (only once) and takes about 5 seconds which is negligible compared to the runtime of </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, and hence is not included in the reported numbers.</span></p>
-<p><span class="font4" style="font-style:italic;">4) &nbsp;&nbsp;&nbsp;Results:</span><span class="font4"> To demonstrate the dependence of performance on global synchronizations, we vary the number of iterations of the algorithm by altering the number of partitions the graph is split into. Fewer partitions result in a smaller number of large sub-graphs. Each map task does more work and would normally result in fewer global</span></p>
-<p><span class="font4"><sup>3</sup>The Igraph Library. <a href="http://igraph.sourceforge.net/">http://igraph.sourceforge.net/</a></span></p>
-<p><span class="font4">iterations in the relaxed case. The fundamental observation here is that it takes fewer iterations to converge for a graph having already converged sub-graphs. The trends are more pronounced when the graph follows the power-law distribution more closely. In either case, the total number of iterations are fewer than in the general case. For Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, if the number of partitions is decreased to one, the entire graph is given to one </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> and its local MapReduce would compute the final </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> of all the nodes. If the partition size is one, each partition gets a single adjacency list; Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> becomes General </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, because each </span><span class="font1">map </span><span class="font4">task operates on a single node.</span></p><div><img src="async-alg-in-mr_files/async-alg-in-mr-3.jpg" style="width:244pt;height:156pt;"/>
-<p><span class="font3">Figure 4. </span><span class="font3" style="font-style:italic;">PageRank:</span><span class="font3"> Time to converge(on y-axis) for various number of Partitions(on x-axis) for Graph A</span></p></div><br clear="all"/><div><img src="async-alg-in-mr_files/async-alg-in-mr-4.jpg" style="width:247pt;height:156pt;"/>
-<p><span class="font4">Figure 2. </span><span class="font4" style="font-style:italic;">PageRank:</span><span class="font4"> Number of Iterations to converge(on y-axis) for different number of Partitions(on x-axis) for Graph A</span></p></div><br clear="all"/><div><img src="async-alg-in-mr_files/async-alg-in-mr-5.jpg" style="width:240pt;height:146pt;"/>
-<p><span class="font4">Figure 3. </span><span class="font4" style="font-style:italic;">PageRank:</span><span class="font4"> Number of Iterations to converge(on y-axis) for different number of Partitions(on x-axis) for Graph B</span></p></div><br clear="all"/><div><img src="async-alg-in-mr_files/async-alg-in-mr-6.jpg" style="width:241pt;height:153pt;"/>
-<p><span class="font4">Figure 5. </span><span class="font4" style="font-style:italic;">PageRank:</span><span class="font4"> Time to converge(on y-axis) for various number of Partitions(on x-axis) for Graph B</span></p></div><br clear="all"/>
-<p><span class="font4">Figures 2 and 3 show the number of global iterations taken by the eager and general implementations of </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> on input graphs A and B that we use for input, as we vary the number of partitions. The number of iterations does not change in the general case, since each iteration performs the same work irrespective of the number of partitions and partition sizes.</span></p>
-<p><span class="font4">The results for Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> are consistent with our expectation. The number of global iterations is low for fewer partitions. However, it is not strictly monotonic since partitioning into different number of partitions results in varying number of inter-component edges.</span></p>
-<p><span class="font4">The time to solution depends strongly on the number of iterations but is not completely determined by it. It is true that the global synchronization costs would decrease when we reduce the number of partitions significantly; however, the work to be done by each </span><span class="font1">map </span><span class="font4">task increases significantly. This increase potentially results in increased cost of computation, more so than the benefit of decreased communication. Hence, there exists an optimal number of partitions for which we observe best performance.</span></p>
-<p><span class="font4">Figures 4 and 5 show the runtimes for the eager and general implementations of </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4"> on graphs A and B with varying number of partitions. These figures highlight significant performance gains from the relaxed case over the general case for both graphs. On an average, we observe 8x improvement in running times.</span></p>
+
+<p><span class="font4">Test graphs are generated by adding vertices one at a time — connecting them to </span><span
+		class="font4" style="font-style:italic;">numConn</span><span class="font4"> vertices already in the network, chosen uniformly at random. For each of these </span><span
+		class="font4" style="font-style:italic;">numConn</span><span class="font4"> vertices, </span><span class="font4"
+																																																			 style="font-style:italic;">numIn</span><span
+		class="font4"> and </span><span class="font4" style="font-style:italic;">numOut</span><span class="font4"> of its inlinks and outlinks are chosen uniformly at random and connected to the joining vertex. This is done for all the newly connected nodes to the incoming vertex. This method of creating a graph is closely related to the evolution of online communities, social networks, the web, </span><span
+		class="font4" style="font-style:italic;">etc.</span><span class="font4"> This procedure increases the probability of highly reputed nodes getting linked to new nodes, since they have greater likelihood of being in an inlink from other randomly chosen sites. The best-fit for inlinks in the two input graphs yields the power-law exponent for the graphs, demonstrating their conformity with the hubs-and-spokes model. Very few nodes have a very high inlink values, emphasizing our point that very few nodes require frequent global synchronization. More often than not, even these nodes (hubs) mostly have spokes as their neighbors.</span>
+</p>
+
+<p><span class="font4">Crawlers inherently induce locality in the graphs as they crawl neighborhoods before crawling remote sites. We partition graphs using Metis. A good partitioning algorithm that minimizes edge-cuts has the desired effect of reducing global synchronizations as well. This partitioning is performed off-line (only once) and takes about 5 seconds which is negligible compared to the runtime of </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">, and hence is not included in the reported numbers.</span>
+</p>
+
+<p><span class="font4" style="font-style:italic;">4) &nbsp;&nbsp;&nbsp;Results:</span><span class="font4"> To demonstrate the dependence of performance on global synchronizations, we vary the number of iterations of the algorithm by altering the number of partitions the graph is split into. Fewer partitions result in a smaller number of large sub-graphs. Each map task does more work and would normally result in fewer global</span>
+</p>
+
+<p><span class="font4"><sup>3</sup>The Igraph Library. <a href="http://igraph.sourceforge.net/">http://igraph.sourceforge.net/</a></span>
+</p>
+
+<p><span class="font4">iterations in the relaxed case. The fundamental observation here is that it takes fewer iterations to converge for a graph having already converged sub-graphs. The trends are more pronounced when the graph follows the power-law distribution more closely. In either case, the total number of iterations are fewer than in the general case. For Eager </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">, if the number of partitions is decreased to one, the entire graph is given to one </span><span
+		class="font4" style="font-style:italic;">global map</span><span class="font4"> and its local MapReduce would compute the final </span><span
+		class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> of all the nodes. If the partition size is one, each partition gets a single adjacency list; Eager </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> becomes General </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">, because each </span><span
+		class="font1">map </span><span class="font4">task operates on a single node.</span></p>
+
+<div><img src="async-alg-in-mr_files/async-alg-in-mr-3.jpg" style="width:244pt;height:156pt;"/>
+
+	<p><span class="font3">Figure 4. </span><span class="font3" style="font-style:italic;">PageRank:</span><span
+			class="font3"> Time to converge(on y-axis) for various number of Partitions(on x-axis) for Graph A</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<div><img src="async-alg-in-mr_files/async-alg-in-mr-4.jpg" style="width:247pt;height:156pt;"/>
+
+	<p><span class="font4">Figure 2. </span><span class="font4" style="font-style:italic;">PageRank:</span><span
+			class="font4"> Number of Iterations to converge(on y-axis) for different number of Partitions(on x-axis) for Graph A</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<div><img src="async-alg-in-mr_files/async-alg-in-mr-5.jpg" style="width:240pt;height:146pt;"/>
+
+	<p><span class="font4">Figure 3. </span><span class="font4" style="font-style:italic;">PageRank:</span><span
+			class="font4"> Number of Iterations to converge(on y-axis) for different number of Partitions(on x-axis) for Graph B</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<div><img src="async-alg-in-mr_files/async-alg-in-mr-6.jpg" style="width:241pt;height:153pt;"/>
+
+	<p><span class="font4">Figure 5. </span><span class="font4" style="font-style:italic;">PageRank:</span><span
+			class="font4"> Time to converge(on y-axis) for various number of Partitions(on x-axis) for Graph B</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<p><span class="font4">Figures 2 and 3 show the number of global iterations taken by the eager and general implementations of </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> on input graphs A and B that we use for input, as we vary the number of partitions. The number of iterations does not change in the general case, since each iteration performs the same work irrespective of the number of partitions and partition sizes.</span>
+</p>
+
+<p><span class="font4">The results for Eager </span><span class="font4" style="font-style:italic;">PageRank</span><span
+		class="font4"> are consistent with our expectation. The number of global iterations is low for fewer partitions. However, it is not strictly monotonic since partitioning into different number of partitions results in varying number of inter-component edges.</span>
+</p>
+
+<p><span class="font4">The time to solution depends strongly on the number of iterations but is not completely determined by it. It is true that the global synchronization costs would decrease when we reduce the number of partitions significantly; however, the work to be done by each </span><span
+		class="font1">map </span><span class="font4">task increases significantly. This increase potentially results in increased cost of computation, more so than the benefit of decreased communication. Hence, there exists an optimal number of partitions for which we observe best performance.</span>
+</p>
+
+<p><span class="font4">Figures 4 and 5 show the runtimes for the eager and general implementations of </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4"> on graphs A and B with varying number of partitions. These figures highlight significant performance gains from the relaxed case over the general case for both graphs. On an average, we observe 8x improvement in running times.</span>
+</p>
+
 <p><span class="font4" style="font-style:italic;">C. </span><span class="font4">Shortest Path</span></p>
-<p><span class="font4" style="font-style:italic;">Shortest Path</span><span class="font4"> algorithms are used to compute the shortest paths and distances between nodes in directed graphs. The graphs are often large and distributed (for example, networks of financial transactions, citation graphs) and require computation of results in reasonable (interactive) times. For our evaluation, we consider </span><span class="font4" style="font-style:italic;">Single Source Shortest Path </span><span class="font4">algorithm in which we find the shortest distances to every node in the graph from a single source. </span><span class="font4" style="font-style:italic;">All-Pairs Shortest Path</span><span class="font4"> has a related structure, and a similar approach can be used.</span></p>
-<p><span class="font4">Distributed implementation of the commonly used Dijk-stra’s algorithm for </span><span class="font4" style="font-style:italic;">Single Source Shortest Path</span><span class="font4"> allows asyn-chrony. The algorithm maintains the shortest known distance of each node in the graph from the source (initialized to zero for the source and infinity for the rest of the nodes). Shortest distances are updated for each node as and when a new path to the node is discovered. After a few iterations, all paths to all nodes in the graph are discovered, and hence the shortest distances converge. Distributed implementations of the algorithm allow partitioning of the graph into sub-graphs, and computing shortest distances of nodes using the paths within the sub-graph asynchronously. Once all the paths in the sub-graph are considered, a global synchronization is required to account for the edges across sub-graphs.</span></p><div><img src="async-alg-in-mr_files/async-alg-in-mr-7.jpg" style="width:228pt;height:143pt;"/>
-<p><span class="font4">Figure 6. </span><span class="font4" style="font-style:italic;">Single Source Shortest Path</span><span class="font4">: Number of Iterations to converge(on y-axis) for different number of Partitions(on x-axis) for Graph A</span></p></div><br clear="all"/><div><img src="async-alg-in-mr_files/async-alg-in-mr-8.jpg" style="width:246pt;height:153pt;"/>
-<p><span class="font4">Figure 7. </span><span class="font4" style="font-style:italic;">Single Source Shortest Path</span><span class="font4">: Time to converge(on y-axis) for various number of Partitions(on x-axis) for Graph A</span></p></div><br clear="all"/>
-<p><span class="font4" style="font-style:italic;">1) &nbsp;&nbsp;&nbsp;Implementation:</span><span class="font4"> In the general implementation of </span><span class="font4" style="font-style:italic;">Single Source Shortest Path</span><span class="font4"> in MapReduce, each </span><span class="font1">map </span><span class="font4">operates on one node, say u (would take its adjacency list as input); and for every destination node v, emits the sum of the shortest distance to u and the weight of the edge (u, j) in consideration. This is the shortest distance to the destination node v on a known path through the node n. Each </span><span class="font1">reduce </span><span class="font4">function operates on one node (receives weights of paths through multiple nodes as input); finds the minimum of the different paths to find the shortest path until that iteration. Convergence takes a number of iterations — the shortest distances of nodes from the source would not change for subsequent iterations. Again for the base case (like in </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">), we take a partition as input instead of a single node’s adjacency list, without any loss in performance.</span></p>
-<p><span class="font4">In the eager implementation of </span><span class="font4" style="font-style:italic;">Single Source Shortest Path,</span><span class="font4"> each </span><span class="font1">map </span><span class="font4">takes a sub-graph as input; and through iterations of </span><span class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> functions, computes the shortest distances of nodes in the sub-graph from the source through other nodes in the same sub-graph. A </span><span class="font4" style="font-style:italic;">global reduce</span><span class="font4"> ensues upon convergence of all local MapReduce operations. Since most real-world graphs are heavy-tailed, edges across partitions are rare and hence we expect a decrease in the number of global iterations, with bulk of the work performed in the local iterations.</span></p>
-<p><span class="font4" style="font-style:italic;">2) &nbsp;&nbsp;&nbsp;Results:</span><span class="font4"> We evaluate </span><span class="font4" style="font-style:italic;">Single Source Shortest Path</span><span class="font4"> on graph A used in the evaluation of </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">. We assign random weights to the edges in the graphs.</span></p>
-<p><span class="font4">Figure 6 shows the number of global iterations (synchronizations) </span><span class="font4" style="font-style:italic;">Single Source Shortest Path</span><span class="font4"> takes to converge for varying number of partitions in graph A. Clearly, the eager implementation requires fewer global iterations for fewer partitions. Again, the iteration count is not strictly monotonic, due to differences in partitioning. The number of global iterations in the general implementation remains the same.</span></p>
-<p><span class="font4">Figure 7 shows the convergence time for </span><span class="font4" style="font-style:italic;">Single Source Shortest Path</span><span class="font4"> for varying number of partitions in graph A. As observed in </span><span class="font4" style="font-style:italic;">PageRank,</span><span class="font4"> though the running time depends on the number of global iterations, it is not entirely determined by it. As in the previous case, we observe significant performance improvements amounting to 8x speedup over the general implementation.</span></p>
+
+<p><span class="font4" style="font-style:italic;">Shortest Path</span><span class="font4"> algorithms are used to compute the shortest paths and distances between nodes in directed graphs. The graphs are often large and distributed (for example, networks of financial transactions, citation graphs) and require computation of results in reasonable (interactive) times. For our evaluation, we consider </span><span
+		class="font4" style="font-style:italic;">Single Source Shortest Path </span><span class="font4">algorithm in which we find the shortest distances to every node in the graph from a single source. </span><span
+		class="font4" style="font-style:italic;">All-Pairs Shortest Path</span><span class="font4"> has a related structure, and a similar approach can be used.</span>
+</p>
+
+<p><span class="font4">Distributed implementation of the commonly used Dijk-stra’s algorithm for </span><span
+		class="font4" style="font-style:italic;">Single Source Shortest Path</span><span class="font4"> allows asyn-chrony. The algorithm maintains the shortest known distance of each node in the graph from the source (initialized to zero for the source and infinity for the rest of the nodes). Shortest distances are updated for each node as and when a new path to the node is discovered. After a few iterations, all paths to all nodes in the graph are discovered, and hence the shortest distances converge. Distributed implementations of the algorithm allow partitioning of the graph into sub-graphs, and computing shortest distances of nodes using the paths within the sub-graph asynchronously. Once all the paths in the sub-graph are considered, a global synchronization is required to account for the edges across sub-graphs.</span>
+</p>
+
+<div><img src="async-alg-in-mr_files/async-alg-in-mr-7.jpg" style="width:228pt;height:143pt;"/>
+
+	<p><span class="font4">Figure 6. </span><span class="font4"
+																								style="font-style:italic;">Single Source Shortest Path</span><span
+			class="font4">: Number of Iterations to converge(on y-axis) for different number of Partitions(on x-axis) for Graph A</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<div><img src="async-alg-in-mr_files/async-alg-in-mr-8.jpg" style="width:246pt;height:153pt;"/>
+
+	<p><span class="font4">Figure 7. </span><span class="font4"
+																								style="font-style:italic;">Single Source Shortest Path</span><span
+			class="font4">: Time to converge(on y-axis) for various number of Partitions(on x-axis) for Graph A</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<p><span class="font4" style="font-style:italic;">1) &nbsp;&nbsp;&nbsp;Implementation:</span><span class="font4"> In the general implementation of </span><span
+		class="font4" style="font-style:italic;">Single Source Shortest Path</span><span
+		class="font4"> in MapReduce, each </span><span class="font1">map </span><span class="font4">operates on one node, say u (would take its adjacency list as input); and for every destination node v, emits the sum of the shortest distance to u and the weight of the edge (u, j) in consideration. This is the shortest distance to the destination node v on a known path through the node n. Each </span><span
+		class="font1">reduce </span><span class="font4">function operates on one node (receives weights of paths through multiple nodes as input); finds the minimum of the different paths to find the shortest path until that iteration. Convergence takes a number of iterations — the shortest distances of nodes from the source would not change for subsequent iterations. Again for the base case (like in </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">), we take a partition as input instead of a single node’s adjacency list, without any loss in performance.</span>
+</p>
+
+<p><span class="font4">In the eager implementation of </span><span class="font4" style="font-style:italic;">Single Source Shortest Path,</span><span
+		class="font4"> each </span><span class="font1">map </span><span class="font4">takes a sub-graph as input; and through iterations of </span><span
+		class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4"
+																																																	 style="font-style:italic;">local reduce</span><span
+		class="font4"> functions, computes the shortest distances of nodes in the sub-graph from the source through other nodes in the same sub-graph. A </span><span
+		class="font4" style="font-style:italic;">global reduce</span><span class="font4"> ensues upon convergence of all local MapReduce operations. Since most real-world graphs are heavy-tailed, edges across partitions are rare and hence we expect a decrease in the number of global iterations, with bulk of the work performed in the local iterations.</span>
+</p>
+
+<p><span class="font4" style="font-style:italic;">2) &nbsp;&nbsp;&nbsp;Results:</span><span
+		class="font4"> We evaluate </span><span class="font4"
+																						style="font-style:italic;">Single Source Shortest Path</span><span
+		class="font4"> on graph A used in the evaluation of </span><span class="font4"
+																																		 style="font-style:italic;">PageRank</span><span
+		class="font4">. We assign random weights to the edges in the graphs.</span></p>
+
+<p><span class="font4">Figure 6 shows the number of global iterations (synchronizations) </span><span class="font4"
+																																																			style="font-style:italic;">Single Source Shortest Path</span><span
+		class="font4"> takes to converge for varying number of partitions in graph A. Clearly, the eager implementation requires fewer global iterations for fewer partitions. Again, the iteration count is not strictly monotonic, due to differences in partitioning. The number of global iterations in the general implementation remains the same.</span>
+</p>
+
+<p><span class="font4">Figure 7 shows the convergence time for </span><span class="font4" style="font-style:italic;">Single Source Shortest Path</span><span
+		class="font4"> for varying number of partitions in graph A. As observed in </span><span class="font4"
+																																														style="font-style:italic;">PageRank,</span><span
+		class="font4"> though the running time depends on the number of global iterations, it is not entirely determined by it. As in the previous case, we observe significant performance improvements amounting to 8x speedup over the general implementation.</span>
+</p>
+
 <p><span class="font4" style="font-style:italic;">D. </span><span class="font4">K-Means</span></p>
-<p><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> is a commonly-used technique for unsupervised clustering. Implementation of the algorithm in the MapRe-duce framework is straightforward as outlined in [10, 2]. Briefly, in the map phase, every point chooses its closest cluster centroid and in the reduce phase, every centroid is updated to be the mean of all the points that chose the particular centroid. The iterations of map and reduce phases continue until the centroid movement is below a given threshold. Euclidean distance metric is usually used to calculate the centroid movement.</span></p><div><img src="async-alg-in-mr_files/async-alg-in-mr-9.jpg" style="width:228pt;height:156pt;"/>
-<p><span class="font3">Figure 9. Time-to-Converge for Varying thresholds</span></p></div><br clear="all"/><div><img src="async-alg-in-mr_files/async-alg-in-mr-10.jpg" style="width:243pt;height:152pt;"/>
-<p><span class="font3">Figure 8. Iterations-to-Converge for Varying thresholds</span></p></div><br clear="all"/>
-<p><span class="font4">In Eager </span><span class="font4" style="font-style:italic;">K-Means,</span><span class="font4"> each </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> handles a unique subset of the input points. The </span><span class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">local reduce </span><span class="font4">iterations inside the </span><span class="font4" style="font-style:italic;">global map</span><span class="font4">, cluster the given subset of the points using the common input-cluster centroids. Once the local iterations converge, the </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> emits the input-centroids and their associated updated-centroids. The </span><span class="font4" style="font-style:italic;">global reduce</span><span class="font4"> calculates the final-centroids, which is the mean of all updated-centroids corresponding to a single input-centroid. The final-centroids form the input-centroids for the next iteration. These iterations continue until the input-centroids converge.</span></p>
-<p><span class="font4">The algorithm used in the eager approach to </span><span class="font4" style="font-style:italic;">K-Means </span><span class="font4">is similar to the one recently proposed by Tom-Yov and Slonim [12] for pairwise clustering. An important observation from their results is that the input to the </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> should not be the same subset of the input points in every iteration. Every few iterations, the input points need to be partitioned differently across </span><span class="font4" style="font-style:italic;">global maps</span><span class="font4"> so as to avoid the algorithm’s move towards local optima. Also, the convergence condition includes detection of oscillations along with the Euclidean metric.</span></p>
-<p><span class="font4">We use the </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> implementation in the normal MapReduce framework from the Apache Mahout project<sup><a name="footnote3"></a><a href="#bookmark3">3</a></sup>. Sampled US Census data of 1990 from the UCI Machine Learning repository<sup><a name="footnote4"></a><a href="#bookmark4">4</a></sup> is used as input for comparison between the general and eager approaches. The sample size is around 200K points each with 68 dimensions. For both General and Eager </span><span class="font4" style="font-style:italic;">K-Means,</span><span class="font4"> initial centroids are chosen at random for the sake of generality. Algorithms such as canopy clustering can be used to identify initial centroids for faster execution and better quality of final clusters.</span></p>
-<p><span class="font4">Figure 8 shows the number of iterations required to converge for different thresholds of convergence, with a fixed number of partitions (52). It is evident that it takes more iterations to converge for smaller threshold values. However, Eager </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> converges in less than one-third of the global iterations taken by general </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4">. Figure 9 shows the time taken to converge for different thresholds. As expected, the time to converge is proportional to the number of iterations. It takes longer to converge for smaller threshold values. Partial synchronizations lead to a performance improvement of about 3.5x on average compared to general </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4">.</span></p>
+
+<p><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> is a commonly-used technique for unsupervised clustering. Implementation of the algorithm in the MapRe-duce framework is straightforward as outlined in [10, 2]. Briefly, in the map phase, every point chooses its closest cluster centroid and in the reduce phase, every centroid is updated to be the mean of all the points that chose the particular centroid. The iterations of map and reduce phases continue until the centroid movement is below a given threshold. Euclidean distance metric is usually used to calculate the centroid movement.</span>
+</p>
+
+<div><img src="async-alg-in-mr_files/async-alg-in-mr-9.jpg" style="width:228pt;height:156pt;"/>
+
+	<p><span class="font3">Figure 9. Time-to-Converge for Varying thresholds</span></p>
+</div>
+<br clear="all"/>
+
+<div><img src="async-alg-in-mr_files/async-alg-in-mr-10.jpg" style="width:243pt;height:152pt;"/>
+
+	<p><span class="font3">Figure 8. Iterations-to-Converge for Varying thresholds</span></p>
+</div>
+<br clear="all"/>
+
+<p><span class="font4">In Eager </span><span class="font4" style="font-style:italic;">K-Means,</span><span
+		class="font4"> each </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> handles a unique subset of the input points. The </span><span
+		class="font4" style="font-style:italic;">local map</span><span class="font4"> and </span><span class="font4"
+																																																	 style="font-style:italic;">local reduce </span><span
+		class="font4">iterations inside the </span><span class="font4" style="font-style:italic;">global map</span><span
+		class="font4">, cluster the given subset of the points using the common input-cluster centroids. Once the local iterations converge, the </span><span
+		class="font4" style="font-style:italic;">global map</span><span class="font4"> emits the input-centroids and their associated updated-centroids. The </span><span
+		class="font4" style="font-style:italic;">global reduce</span><span class="font4"> calculates the final-centroids, which is the mean of all updated-centroids corresponding to a single input-centroid. The final-centroids form the input-centroids for the next iteration. These iterations continue until the input-centroids converge.</span>
+</p>
+
+<p><span class="font4">The algorithm used in the eager approach to </span><span class="font4"
+																																								style="font-style:italic;">K-Means </span><span
+		class="font4">is similar to the one recently proposed by Tom-Yov and Slonim [12] for pairwise clustering. An important observation from their results is that the input to the </span><span
+		class="font4" style="font-style:italic;">global map</span><span class="font4"> should not be the same subset of the input points in every iteration. Every few iterations, the input points need to be partitioned differently across </span><span
+		class="font4" style="font-style:italic;">global maps</span><span class="font4"> so as to avoid the algorithm’s move towards local optima. Also, the convergence condition includes detection of oscillations along with the Euclidean metric.</span>
+</p>
+
+<p><span class="font4">We use the </span><span class="font4" style="font-style:italic;">K-Means</span><span
+		class="font4"> implementation in the normal MapReduce framework from the Apache Mahout project<sup><a
+		name="footnote3"></a><a href="#bookmark3">3</a></sup>. Sampled US Census data of 1990 from the UCI Machine Learning repository<sup><a
+		name="footnote4"></a><a href="#bookmark4">4</a></sup> is used as input for comparison between the general and eager approaches. The sample size is around 200K points each with 68 dimensions. For both General and Eager </span><span
+		class="font4" style="font-style:italic;">K-Means,</span><span class="font4"> initial centroids are chosen at random for the sake of generality. Algorithms such as canopy clustering can be used to identify initial centroids for faster execution and better quality of final clusters.</span>
+</p>
+
+<p><span class="font4">Figure 8 shows the number of iterations required to converge for different thresholds of convergence, with a fixed number of partitions (52). It is evident that it takes more iterations to converge for smaller threshold values. However, Eager </span><span
+		class="font4" style="font-style:italic;">K-Means</span><span class="font4"> converges in less than one-third of the global iterations taken by general </span><span
+		class="font4" style="font-style:italic;">K-Means</span><span class="font4">. Figure 9 shows the time taken to converge for different thresholds. As expected, the time to converge is proportional to the number of iterations. It takes longer to converge for smaller threshold values. Partial synchronizations lead to a performance improvement of about 3.5x on average compared to general </span><span
+		class="font4" style="font-style:italic;">K-Means</span><span class="font4">.</span></p>
+
 <p><span class="font4" style="font-style:italic;">E. Broader Applicability</span></p>
-<p><span class="font4">While we present results for only three applications, our approach is applicable to a broad set of applications that admit asynchronous algorithms. These applications include</span></p>
-<p><span class="font4">— all-pairs shortest path, network flow and coding, neural-nets, linear and non-linear solvers, and constraint matching.</span></p>
+
+<p><span class="font4">While we present results for only three applications, our approach is applicable to a broad set of applications that admit asynchronous algorithms. These applications include</span>
+</p>
+
+<p><span class="font4">— all-pairs shortest path, network flow and coding, neural-nets, linear and non-linear solvers, and constraint matching.</span>
+</p>
+
 <p><span class="font4">VI. DISCUSSION</span></p>
-<p><span class="font4">We now discuss some important aspects of our results — primarily, (i) does our proposed approach generalize beyond small classes of applications? (ii) what impact does it have on the overall programmability? and (iii) how does it interact with other aspects, such as fault tolerance and scalability, of the underlying system?</span></p>
-<p><span class="font5" style="font-weight:bold;">Generality of Proposed Extensions. </span><span class="font4">Our partial synchronization techniques can be generalized to broad classes of applications. </span><span class="font4" style="font-style:italic;">PageRank</span><span class="font4">, which relies on an asynchronous mat-vec, is representative of eigenvalue solvers (computing eigenvectors using the power method of repeated multiplications by a unitary matrix). Asynchronous mat-vecs form the core of iterative linear system solvers. </span><span class="font4" style="font-style:italic;">Shortest Path </span><span class="font4">represents a class of applications over sparse graphs that includes minimum spanning trees, transitive closure, and connected components. Graph alignment through random-walks and isoranks can be directly cast into our framework. A wide range of applications that rely on the spectra of a graph can be computed using this algorithmic template.</span></p>
-<p><span class="font4">Our methods directly apply to neural-nets, network flow, and coding problems, </span><span class="font4" style="font-style:italic;">etc.</span><span class="font4"> Asynchronous </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> clustering immediately validates utility of our approach in various clustering and data-mining applications. The goal of this paper is to examine tradeoffs of serial operation counts and distributed performance. These tradeoffs manifest themselves in wide application classes.</span></p>
-<p><span class="font4" style="font-weight:bold;">Programming Complexity. </span><span class="font4">While allowing partial synchronizations and relaxed global synchronizations requires slightly more programming effort than traditional MapRe-duce, we argue that the programming complexity is not substantial. This is manifested in the simplicity of the semantics in the technical report [7] and the API proposed in the paper. Our implementations of the benchmark problems did not require modifications of over tens of lines of MapReduce code.</span></p>
-<p><span class="font4" style="font-weight:bold;">Other Optimizations. </span><span class="font4">Few optimizations have been proposed for MapReduce for specific cases. Partial synchronization techniques do not interfere with these optimizations. </span><span class="font4" style="font-style:italic;">eg.,</span><span class="font4"> Combiners are used to aggregate intermediate data corresponding to one key on a node so as to reduce the network traffic. Though it might seem our approach might interfere with the use of combiners, combiners are applied to the output of </span><span class="font4" style="font-style:italic;">global map</span><span class="font4"> operations, and hence </span><span class="font4" style="font-style:italic;">local reduce </span><span class="font4">(part of the map) has no bearing on it.</span></p>
-<p><span class="font4" style="font-weight:bold;">Fault-tolerance. </span><span class="font4">While our approach relies on existing MapReduce mechanisms for fault-tolerance, in the event of failure(s), our recovery times may be slightly longer, since each map task is coarser and re-execution would take longer. However, all of our results are reported on a production cloud environment, with real-life transient failures. This leads us to believe that the overhead is not significant.</span></p>
-<p><span class="font4" style="font-weight:bold;">Scalability. </span><span class="font4">In general, it is difficult to estimate the resources available to, and used by a program executing in the cloud. In order to get a quantitative understanding of our scalability, we ran a few experiments on the 460-node cluster (provided by the IBM-Google consortium as part of the CluE NSF program) using larger data sets. Such high node utilization incurs heavy network delays during copying and merging before the reduce phase, leading to increased synchronization overheads. By showing significant performance improvements on a huge data set even in a setting of such large scale, our approach demonstrates scalability.</span></p>
+
+<p><span class="font4">We now discuss some important aspects of our results — primarily, (i) does our proposed approach generalize beyond small classes of applications? (ii) what impact does it have on the overall programmability? and (iii) how does it interact with other aspects, such as fault tolerance and scalability, of the underlying system?</span>
+</p>
+
+<p><span class="font5" style="font-weight:bold;">Generality of Proposed Extensions. </span><span class="font4">Our partial synchronization techniques can be generalized to broad classes of applications. </span><span
+		class="font4" style="font-style:italic;">PageRank</span><span class="font4">, which relies on an asynchronous mat-vec, is representative of eigenvalue solvers (computing eigenvectors using the power method of repeated multiplications by a unitary matrix). Asynchronous mat-vecs form the core of iterative linear system solvers. </span><span
+		class="font4" style="font-style:italic;">Shortest Path </span><span class="font4">represents a class of applications over sparse graphs that includes minimum spanning trees, transitive closure, and connected components. Graph alignment through random-walks and isoranks can be directly cast into our framework. A wide range of applications that rely on the spectra of a graph can be computed using this algorithmic template.</span>
+</p>
+
+<p><span class="font4">Our methods directly apply to neural-nets, network flow, and coding problems, </span><span
+		class="font4" style="font-style:italic;">etc.</span><span class="font4"> Asynchronous </span><span class="font4"
+																																																			 style="font-style:italic;">K-Means</span><span
+		class="font4"> clustering immediately validates utility of our approach in various clustering and data-mining applications. The goal of this paper is to examine tradeoffs of serial operation counts and distributed performance. These tradeoffs manifest themselves in wide application classes.</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">Programming Complexity. </span><span class="font4">While allowing partial synchronizations and relaxed global synchronizations requires slightly more programming effort than traditional MapRe-duce, we argue that the programming complexity is not substantial. This is manifested in the simplicity of the semantics in the technical report [7] and the API proposed in the paper. Our implementations of the benchmark problems did not require modifications of over tens of lines of MapReduce code.</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">Other Optimizations. </span><span class="font4">Few optimizations have been proposed for MapReduce for specific cases. Partial synchronization techniques do not interfere with these optimizations. </span><span
+		class="font4" style="font-style:italic;">eg.,</span><span class="font4"> Combiners are used to aggregate intermediate data corresponding to one key on a node so as to reduce the network traffic. Though it might seem our approach might interfere with the use of combiners, combiners are applied to the output of </span><span
+		class="font4" style="font-style:italic;">global map</span><span class="font4"> operations, and hence </span><span
+		class="font4" style="font-style:italic;">local reduce </span><span class="font4">(part of the map) has no bearing on it.</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">Fault-tolerance. </span><span class="font4">While our approach relies on existing MapReduce mechanisms for fault-tolerance, in the event of failure(s), our recovery times may be slightly longer, since each map task is coarser and re-execution would take longer. However, all of our results are reported on a production cloud environment, with real-life transient failures. This leads us to believe that the overhead is not significant.</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">Scalability. </span><span class="font4">In general, it is difficult to estimate the resources available to, and used by a program executing in the cloud. In order to get a quantitative understanding of our scalability, we ran a few experiments on the 460-node cluster (provided by the IBM-Google consortium as part of the CluE NSF program) using larger data sets. Such high node utilization incurs heavy network delays during copying and merging before the reduce phase, leading to increased synchronization overheads. By showing significant performance improvements on a huge data set even in a setting of such large scale, our approach demonstrates scalability.</span>
+</p>
+
 <p><span class="font4" style="font-variant:small-caps;">VII. Related work</span></p>
-<p><span class="font4">Several research efforts have targeted various aspects of asynchronous algorithms. These include novel asynchronous algorithms for different problems [9, 1], analysis of their convergence properties, and their execution on different platforms with associated performance gains. Recently, it has been shown that asynchronous algorithms for iterative numerical kernels significantly enhance performance on multicore processors [8]. In shared-memory systems, apart from the reduced synchronization costs, reduction in the off-chip memory bandwidth pressure due to increased data locality is a major factor for performance gains. Though the execution of asynchronous iterative algorithms on distributed environments has been proposed, constructs for asynchrony, impact on performance, and interactions with the API have not been well investigated. In this paper, we demonstrate the use of asynchronous algorithms in a distributed environment, prone to faults. With intuitive changes to the programming model of MapReduce, we show that data locality along with asynchrony can be safely exploited. Furthermore, the cost of synchronization (due to heavy network overheads) is significantly higher in a distributed setting compared to tightly-coupled parallel computers, leading to higher gains in performance and scalability.</span></p>
-<p><span class="font4">Over the past few years, the MapReduce programming model has gained attention primarily because of its simple programming model and the wide range of underlying hardware environments. There have been efforts exploring both the systems aspects as well as the application base for MapReduce. A number of efforts [6, 11, 14] target optimizations to the MapReduce runtime and scheduling systems. Proposals include dynamic resource allocation to fit job requirements and system capabilities to detect and eliminate bottlenecks within a job. Such improvements combined with our efficient application semantics, would significantly increase the scope and scalability of MapReduce applications. The simplicity of MapReduce programming model has also motivated its use in traditional shared memory systems [10].</span></p>
-<p><span class="font4">A significant part of a typical Hadoop execution corresponds to the underlying communication and I/O. This happens even though the MapReduce runtime attempts to reduce communication by trying to instantiate a task at the node or the rack where the data is present. Afrati et al.<sup>6</sup> study this important problem and propose alternate computational models for sorting applications to reduce communication between hosts in different racks. Our extended semantics deal with the same problem but, from an application’s perspective, independent of the underlying hardware resources.</span></p>
-<p><span class="font4">Recently, various forms of partial aggregations, similar to combiners in the MapReduce paper [4], have been shown to significantly reduce network overheads during global synchronization [13]. These efforts focus on different mathematical properties of aggregators (commutative and associative), which can be leveraged by the runtime to dynamically setup a pipelined tree-structured partial aggregation. These efforts do not address the problem of reducing the number of global synchronizations. In contrast, we focus on the algorithmic properties of the application to reduce the number of global synchronizations and its associated</span></p>
-<p><span class="font4"><sup>6</sup>Foto N. Afrati and Jeffrey D. Ullman: A New Computation Model for Rack-based Computing. <a href="http://infolab.stanford.edu/Ollman/pub/mapred.pdf">http://infolab.stanford.edu/Ollman/pub/mapred.pdf</a> network overheads. By combining optimizations such as tree-structured partial aggregation, with capabilities of the proposed </span><span class="font4" style="font-style:italic;">local reduce</span><span class="font4"> operations, we can reduce network overhead further.</span></p>
+
+<p><span class="font4">Several research efforts have targeted various aspects of asynchronous algorithms. These include novel asynchronous algorithms for different problems [9, 1], analysis of their convergence properties, and their execution on different platforms with associated performance gains. Recently, it has been shown that asynchronous algorithms for iterative numerical kernels significantly enhance performance on multicore processors [8]. In shared-memory systems, apart from the reduced synchronization costs, reduction in the off-chip memory bandwidth pressure due to increased data locality is a major factor for performance gains. Though the execution of asynchronous iterative algorithms on distributed environments has been proposed, constructs for asynchrony, impact on performance, and interactions with the API have not been well investigated. In this paper, we demonstrate the use of asynchronous algorithms in a distributed environment, prone to faults. With intuitive changes to the programming model of MapReduce, we show that data locality along with asynchrony can be safely exploited. Furthermore, the cost of synchronization (due to heavy network overheads) is significantly higher in a distributed setting compared to tightly-coupled parallel computers, leading to higher gains in performance and scalability.</span>
+</p>
+
+<p><span class="font4">Over the past few years, the MapReduce programming model has gained attention primarily because of its simple programming model and the wide range of underlying hardware environments. There have been efforts exploring both the systems aspects as well as the application base for MapReduce. A number of efforts [6, 11, 14] target optimizations to the MapReduce runtime and scheduling systems. Proposals include dynamic resource allocation to fit job requirements and system capabilities to detect and eliminate bottlenecks within a job. Such improvements combined with our efficient application semantics, would significantly increase the scope and scalability of MapReduce applications. The simplicity of MapReduce programming model has also motivated its use in traditional shared memory systems [10].</span>
+</p>
+
+<p><span class="font4">A significant part of a typical Hadoop execution corresponds to the underlying communication and I/O. This happens even though the MapReduce runtime attempts to reduce communication by trying to instantiate a task at the node or the rack where the data is present. Afrati et al.<sup>6</sup> study this important problem and propose alternate computational models for sorting applications to reduce communication between hosts in different racks. Our extended semantics deal with the same problem but, from an application’s perspective, independent of the underlying hardware resources.</span>
+</p>
+
+<p><span class="font4">Recently, various forms of partial aggregations, similar to combiners in the MapReduce paper [4], have been shown to significantly reduce network overheads during global synchronization [13]. These efforts focus on different mathematical properties of aggregators (commutative and associative), which can be leveraged by the runtime to dynamically setup a pipelined tree-structured partial aggregation. These efforts do not address the problem of reducing the number of global synchronizations. In contrast, we focus on the algorithmic properties of the application to reduce the number of global synchronizations and its associated</span>
+</p>
+
+<p><span class="font4"><sup>6</sup>Foto N. Afrati and Jeffrey D. Ullman: A New Computation Model for Rack-based Computing. <a
+		href="http://infolab.stanford.edu/Ollman/pub/mapred.pdf">http://infolab.stanford.edu/Ollman/pub/mapred.pdf</a> network overheads. By combining optimizations such as tree-structured partial aggregation, with capabilities of the proposed </span><span
+		class="font4" style="font-style:italic;">local reduce</span><span class="font4"> operations, we can reduce network overhead further.</span>
+</p>
+
 <p><span class="font4">VIII. FUTURE WORK</span></p>
-<p><span class="font4">The myriad tradeoffs associated with diverse overheads on different platforms pose intriguing challenges. We identify some of these challenges as they relate to our proposed solutions:</span></p>
-<p><span class="font4" style="font-weight:bold;">Generality of semantic extensions. </span><span class="font4">We have demonstrated the use of partial synchronization and eager scheduling in the context of few applications. While we have argued in favor of their broader applicability, these claims must be quantitatively established. Currently, partial synchronization is restricted to a map and the granularity is determined by the input to the map. Taking the configuration of the system into account, one may support a hierarchy of synchronizations. Furthermore, several task-parallel applications with complex interactions are not naturally suited to traditional MapReduce formulations. Do the proposed set of semantic extensions apply to such applications as well?</span></p>
-<p><span class="font4" style="font-weight:bold;">Optimal granularity for maps. </span><span class="font4">As shown in our work, as well as the results of others, the performance of a MapReduce program is a sensitive function of map granularity. An automated technique, based on execution traces and sampling [5] can potentially deliver these performance increments without burdening the programmer with locality enhancing aggregations.</span></p>
-<p><span class="font4" style="font-weight:bold;">System-level enhancements. </span><span class="font4">Often times, when executing iterative MapReduce programs, the output of one iteration is needed in the next iteration. Currently, the output from a reduction is written to the (distributed) file system (DFS) and must be accessed from the DFS by the next set of maps. This involves significant overhead. Using online data structures (for example, Bigtable) provides credible alternatives; however, issues of fault tolerance must be resolved.</span></p>
+
+<p><span class="font4">The myriad tradeoffs associated with diverse overheads on different platforms pose intriguing challenges. We identify some of these challenges as they relate to our proposed solutions:</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">Generality of semantic extensions. </span><span class="font4">We have demonstrated the use of partial synchronization and eager scheduling in the context of few applications. While we have argued in favor of their broader applicability, these claims must be quantitatively established. Currently, partial synchronization is restricted to a map and the granularity is determined by the input to the map. Taking the configuration of the system into account, one may support a hierarchy of synchronizations. Furthermore, several task-parallel applications with complex interactions are not naturally suited to traditional MapReduce formulations. Do the proposed set of semantic extensions apply to such applications as well?</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">Optimal granularity for maps. </span><span class="font4">As shown in our work, as well as the results of others, the performance of a MapReduce program is a sensitive function of map granularity. An automated technique, based on execution traces and sampling [5] can potentially deliver these performance increments without burdening the programmer with locality enhancing aggregations.</span>
+</p>
+
+<p><span class="font4" style="font-weight:bold;">System-level enhancements. </span><span class="font4">Often times, when executing iterative MapReduce programs, the output of one iteration is needed in the next iteration. Currently, the output from a reduction is written to the (distributed) file system (DFS) and must be accessed from the DFS by the next set of maps. This involves significant overhead. Using online data structures (for example, Bigtable) provides credible alternatives; however, issues of fault tolerance must be resolved.</span>
+</p>
+
 <p><span class="font4" style="font-variant:small-caps;">IX. Conclusion</span></p>
-<p><span class="font4">In this paper, we motivate MapReduce as a platform for distributed execution of asynchronous algorithms. We propose partial synchronization techniques to alleviate global synchronization overheads. We demonstrate that when combined with locality enhancing techniques and algorithmic asynchrony, these extensions are capable of yielding significant performance improvements. We demonstrate our results in the context of the problem of computing </span><span class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> on a web graph, find the </span><span class="font4" style="font-style:italic;">Shortest Path</span><span class="font4"> to any node from a source, and </span><span class="font4" style="font-style:italic;">K-Means</span><span class="font4"> clustering on US census data. Our results strongly motivate the use of partial synchronizations for broad application classes. Finally, these enhancements in performance do not adversely impact the programmability and fault-tolerance features of the underlying MapReduce framework.</span></p>
+
+<p><span class="font4">In this paper, we motivate MapReduce as a platform for distributed execution of asynchronous algorithms. We propose partial synchronization techniques to alleviate global synchronization overheads. We demonstrate that when combined with locality enhancing techniques and algorithmic asynchrony, these extensions are capable of yielding significant performance improvements. We demonstrate our results in the context of the problem of computing </span><span
+		class="font4" style="font-style:italic;">PageRanks</span><span class="font4"> on a web graph, find the </span><span
+		class="font4" style="font-style:italic;">Shortest Path</span><span
+		class="font4"> to any node from a source, and </span><span class="font4"
+																															 style="font-style:italic;">K-Means</span><span
+		class="font4"> clustering on US census data. Our results strongly motivate the use of partial synchronizations for broad application classes. Finally, these enhancements in performance do not adversely impact the programmability and fault-tolerance features of the underlying MapReduce framework.</span>
+</p>
+
 <p><span class="font4" style="font-variant:small-caps;">Acknowledgments</span></p>
+
 <p><span class="font4">The authors would like to acknowledge Mr. Ashish</span></p>
-<p><span class="font4">Gandhe for discussions and for his input on coding various applications. This work was supported in part by the</span></p>
+
+<p><span class="font4">Gandhe for discussions and for his input on coding various applications. This work was supported in part by the</span>
+</p>
+
 <p><span class="font4">National Science Foundation under grant IIS-0844500.</span></p>
+
 <p><span class="font4" style="font-variant:small-caps;">References</span></p>
-<p><span class="font4">[1] &nbsp;&nbsp;&nbsp;J.M. Bahi. Asynchronous iterative algorithms for non-expansive linear system. </span><span class="font4" style="font-style:italic;">J. Parallel Distrib. Comput., </span><span class="font4">60(1), 2000.</span></p>
-<p><span class="font4">[2] &nbsp;&nbsp;&nbsp;C.-T Chu, S.K. Kim, Y.-A. Lin, Y. Yu, G. Bradski, A.Y. Ng, and K. Olukotun. Map-reduce for machine learning on multicore. </span><span class="font4" style="font-style:italic;">Advances in Neural Information Processing Systems 19,</span><span class="font4"> 2007.</span></p>
-<p><span class="font4">[3] &nbsp;&nbsp;&nbsp;Price D. J. de S. A general theory of bibliometric and other cumulative advantage processes. </span><span class="font4" style="font-style:italic;">J. of the American Society for Information Science, Vol 27, 292306,</span><span class="font4"> 1976.</span></p>
-<p><span class="font4">[4] &nbsp;&nbsp;&nbsp;J. Dean and S. Ghemawat. Mapreduce: Simplified data processing on large clusters. </span><span class="font4" style="font-style:italic;">USENIX OSDI</span><span class="font4">, 2004.</span></p>
-<p><span class="font4">[5] &nbsp;&nbsp;&nbsp;R.O. Duda, P.E. Hart, and D.G. Stork. Chapter 8. pattern classication. </span><span class="font4" style="font-style:italic;">A Wiley-Interscience Publication</span><span class="font4">, 2001.</span></p>
-<p><span class="font4">[6] &nbsp;&nbsp;&nbsp;K. Kambatla, A. Pathak, and H. Pucha. Towards optimizing hadoop provisioning for the cloud. </span><span class="font4" style="font-style:italic;">USENIX HotCloud,</span><span class="font4"> 2009.</span></p>
-<p><span class="font4">[7] &nbsp;&nbsp;&nbsp;K. Kambatla, N. Rapolu, S. Jagannathan, and A. Grama. Relaxed synchronization and eager scheduling in mapreduce. </span><span class="font4" style="font-style:italic;">Purdue University Technical Report CSD TR #09-010,</span><span class="font4"> 2009.</span></p>
-<p><span class="font4">[8] &nbsp;&nbsp;&nbsp;L. Liu and Z. Li. Improving parallelism and locality with asynchronous algorithms. </span><span class="font4" style="font-style:italic;">ACM PPoPP,</span><span class="font4"> 2010.</span></p>
-<p><span class="font4">[9] &nbsp;&nbsp;&nbsp;J.C. Miellou, D. El Baz, and P. Spiteri. A new class of asynchronous iterative algorithms with order intervals. </span><span class="font4" style="font-style:italic;">Math. Comput.,</span><span class="font4"> 67(221), 1998.</span></p>
-<p><span class="font4">[10] &nbsp;&nbsp;&nbsp;C. Ranger, R. Raghuraman, A. Penmetsa, G. Bradski, and C. Kozyrakis. Evaluating mapreduce for multi-core and multiprocessor system. </span><span class="font4" style="font-style:italic;">IEEE HPCA,</span><span class="font4"> 2007.</span></p>
-<p><span class="font4">[11] &nbsp;&nbsp;&nbsp;T. Sandholm and K. Lai. Mapreduce optimization using dynamic regulated prioritization. </span><span class="font4" style="font-style:italic;">ACM SIGMETRIC-S/Performance ’09,</span><span class="font4"> 2009.</span></p>
-<p><span class="font4">[12] &nbsp;&nbsp;&nbsp;E. Yom-tov and N. Slonim. Parallel pairwise clustering. </span><span class="font4" style="font-style:italic;">SDM,</span><span class="font4"> 2009.</span></p>
-<p><span class="font4">[13] &nbsp;&nbsp;&nbsp;Y. Yu, P.K. Gunda, and M. Isard. Distributed aggregation for data-parallel computing: interfaces and implementations. </span><span class="font4" style="font-style:italic;">ACM SOSP,</span><span class="font4"> 2009.</span></p>
-<p><span class="font4">[14] &nbsp;&nbsp;&nbsp;M. Zaharia, A. Konwinski, A. Joseph, R. Katz, and I. Stoica. Improving mapreduce performance in heterogeneous environments. </span><span class="font4" style="font-style:italic;">USENIX OSDI,</span><span class="font4"> 2008.</span></p>
+
+<p><span class="font4">[1] &nbsp;&nbsp;&nbsp;J.M. Bahi. Asynchronous iterative algorithms for non-expansive linear system. </span><span
+		class="font4" style="font-style:italic;">J. Parallel Distrib. Comput., </span><span
+		class="font4">60(1), 2000.</span></p>
+
+<p><span class="font4">[2] &nbsp;&nbsp;&nbsp;C.-T Chu, S.K. Kim, Y.-A. Lin, Y. Yu, G. Bradski, A.Y. Ng, and K. Olukotun. Map-reduce for machine learning on multicore. </span><span
+		class="font4" style="font-style:italic;">Advances in Neural Information Processing Systems 19,</span><span
+		class="font4"> 2007.</span></p>
+
+<p><span class="font4">[3] &nbsp;&nbsp;&nbsp;Price D. J. de S. A general theory of bibliometric and other cumulative advantage processes. </span><span
+		class="font4"
+		style="font-style:italic;">J. of the American Society for Information Science, Vol 27, 292306,</span><span
+		class="font4"> 1976.</span></p>
+
+<p><span class="font4">[4] &nbsp;&nbsp;&nbsp;J. Dean and S. Ghemawat. Mapreduce: Simplified data processing on large clusters. </span><span
+		class="font4" style="font-style:italic;">USENIX OSDI</span><span class="font4">, 2004.</span></p>
+
+<p><span
+		class="font4">[5] &nbsp;&nbsp;&nbsp;R.O. Duda, P.E. Hart, and D.G. Stork. Chapter 8. pattern classication. </span><span
+		class="font4" style="font-style:italic;">A Wiley-Interscience Publication</span><span class="font4">, 2001.</span>
+</p>
+
+<p><span class="font4">[6] &nbsp;&nbsp;&nbsp;K. Kambatla, A. Pathak, and H. Pucha. Towards optimizing hadoop provisioning for the cloud. </span><span
+		class="font4" style="font-style:italic;">USENIX HotCloud,</span><span class="font4"> 2009.</span></p>
+
+<p><span class="font4">[7] &nbsp;&nbsp;&nbsp;K. Kambatla, N. Rapolu, S. Jagannathan, and A. Grama. Relaxed synchronization and eager scheduling in mapreduce. </span><span
+		class="font4" style="font-style:italic;">Purdue University Technical Report CSD TR #09-010,</span><span
+		class="font4"> 2009.</span></p>
+
+<p><span class="font4">[8] &nbsp;&nbsp;&nbsp;L. Liu and Z. Li. Improving parallelism and locality with asynchronous algorithms. </span><span
+		class="font4" style="font-style:italic;">ACM PPoPP,</span><span class="font4"> 2010.</span></p>
+
+<p><span class="font4">[9] &nbsp;&nbsp;&nbsp;J.C. Miellou, D. El Baz, and P. Spiteri. A new class of asynchronous iterative algorithms with order intervals. </span><span
+		class="font4" style="font-style:italic;">Math. Comput.,</span><span class="font4"> 67(221), 1998.</span></p>
+
+<p><span class="font4">[10] &nbsp;&nbsp;&nbsp;C. Ranger, R. Raghuraman, A. Penmetsa, G. Bradski, and C. Kozyrakis. Evaluating mapreduce for multi-core and multiprocessor system. </span><span
+		class="font4" style="font-style:italic;">IEEE HPCA,</span><span class="font4"> 2007.</span></p>
+
+<p><span class="font4">[11] &nbsp;&nbsp;&nbsp;T. Sandholm and K. Lai. Mapreduce optimization using dynamic regulated prioritization. </span><span
+		class="font4" style="font-style:italic;">ACM SIGMETRIC-S/Performance ’09,</span><span class="font4"> 2009.</span>
+</p>
+
+<p><span class="font4">[12] &nbsp;&nbsp;&nbsp;E. Yom-tov and N. Slonim. Parallel pairwise clustering. </span><span
+		class="font4" style="font-style:italic;">SDM,</span><span class="font4"> 2009.</span></p>
+
+<p><span class="font4">[13] &nbsp;&nbsp;&nbsp;Y. Yu, P.K. Gunda, and M. Isard. Distributed aggregation for data-parallel computing: interfaces and implementations. </span><span
+		class="font4" style="font-style:italic;">ACM SOSP,</span><span class="font4"> 2009.</span></p>
+
+<p><span class="font4">[14] &nbsp;&nbsp;&nbsp;M. Zaharia, A. Konwinski, A. Joseph, R. Katz, and I. Stoica. Improving mapreduce performance in heterogeneous environments. </span><span
+		class="font4" style="font-style:italic;">USENIX OSDI,</span><span class="font4"> 2008.</span></p>
+
 <p><a name="bookmark1"><sup><a href="#footnote1">1</a></sup></a></p>
+
 <p></p>
+
 <p><a name="bookmark2"><sup><a href="#footnote2">2</a></sup></a></p>
-<p><span class="font4"><sup></sup>METIS. <a href="http://glaros.dtc.umn.edu/gkhome/views/metis/">http://glaros.dtc.umn.edu/gkhome/views/metis/</a></span></p>
+
+<p><span class="font4"><sup></sup>METIS. <a href="http://glaros.dtc.umn.edu/gkhome/views/metis/">http://glaros.dtc.umn.edu/gkhome/views/metis/</a></span>
+</p>
+
 <p><a name="bookmark3"><sup><a href="#footnote3">3</a></sup></a></p>
-<p><span class="font2" style="font-weight:bold;"><sup></sup>Apache Mahout. <a href="http://lucene.apache.org/mahout/">http://lucene.apache.org/mahout/</a></span></p>
+
+<p><span class="font2" style="font-weight:bold;"><sup></sup>Apache Mahout. <a href="http://lucene.apache.org/mahout/">http://lucene.apache.org/mahout/</a></span>
+</p>
+
 <p><a name="bookmark4"><sup><a href="#footnote4">4</a></sup></a></p>
-<p><span class="font2" style="font-weight:bold;"><sup></sup>US Census Data, 1990. UCI Machine Learning Repository: <a href="http://kdd.ics.uci.edu/databases/census1990/USCensus1990.html">http://kdd.ics.uci.edu/databases/census1990/USCensus1990.html</a></span></p>
+
+<p><span class="font2" style="font-weight:bold;"><sup></sup>US Census Data, 1990. UCI Machine Learning Repository: <a
+		href="http://kdd.ics.uci.edu/databases/census1990/USCensus1990.html">http://kdd.ics.uci.edu/databases/census1990/USCensus1990.html</a></span>
+</p>
 </body>
 </html>

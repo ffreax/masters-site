@@ -1,423 +1,1385 @@
 ﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
-	"http://www.w3.org/TR/html4/loose.dtd">
+		"http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<head><meta http-equiv="content-type" content="text/html; charset=UTF-8"/><meta name="generator" content="ABBYY FineReader 11"/><link rel="stylesheet" href="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler.css" type="text/css"/>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+	<meta name="generator" content="ABBYY FineReader 11"/>
+	<link rel="stylesheet"
+				href="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler.css"
+				type="text/css"/>
 </head>
 <body>
-<p><a name="bookmark0"></a><span class="font8">An Adaptive Scheduling Algorithm for Dynamic Heterogeneous Hadoop Systems</span></p>
+<p><a name="bookmark0"></a><span
+		class="font8">An Adaptive Scheduling Algorithm for Dynamic Heterogeneous Hadoop Systems</span></p>
+
 <p><span class="font6">Aysan Rasooli , Douglas G. Down</span></p>
-<p><span class="font6">Department of Computing and Software McMaster University </span><span class="font9" style="font-style:italic;">{rasooa, downd}@mcmaster.ca</span></p>
+
+<p><span class="font6">Department of Computing and Software McMaster University </span><span class="font9"
+																																														 style="font-style:italic;">{rasooa, downd}@mcmaster.ca</span>
+</p>
+
 <p><a name="bookmark1"></a><span class="font7" style="font-weight:bold;">Abstract</span></p>
-<p><span class="font4">The MapReduce and Hadoop frameworks were designed to support efficient large scale computations. There has been growing interest in employing Hadoop clusters for various diverse applications. A large number of (heterogeneous) clients, using the same Hadoop cluster, can result in tensions between the various performance metrics by which such systems are measured. On the one hand, from the service provider side, the utilization of the Hadoop cluster will increase. On the other hand, from the client perspective the parallelism in the system may decrease (with a corresponding degradation in metrics such as mean completion time). An efficient scheduling algorithm should strike a balance between utilization and parallelism in the cluster to address performance metrics such as fairness and mean completion time. In this paper, we propose a new Hadoop cluster scheduling algorithm, which uses system information such as estimated job arrival rates and mean job execution times to make scheduling decisions. The objective of our algorithm is to improve mean completion time of submitted jobs. In addition to addressing this concern, our algorithm pro</span><span class="font3">Copyright © 2011 Aysan Rasooli and Dr. Douglas G. Down. Permission to copy is hereby granted provided the original copyright notice is reproduced in copies made.</span></p>
-<p><span class="font4">vides competitive performance under fairness and locality metrics (with respect to other well-known Hadoop scheduling algorithms - Fair Sharing and FIFO). This approach can be efficiently applied in heterogeneous clusters, in contrast to most Hadoop cluster scheduling algorithm work, which assumes homogeneous clusters. Using simulation, we demonstrate that our algorithm is a very promising candidate for deployment in real systems.</span></p>
+
+<p><span class="font4">The MapReduce and Hadoop frameworks were designed to support efficient large scale computations. There has been growing interest in employing Hadoop clusters for various diverse applications. A large number of (heterogeneous) clients, using the same Hadoop cluster, can result in tensions between the various performance metrics by which such systems are measured. On the one hand, from the service provider side, the utilization of the Hadoop cluster will increase. On the other hand, from the client perspective the parallelism in the system may decrease (with a corresponding degradation in metrics such as mean completion time). An efficient scheduling algorithm should strike a balance between utilization and parallelism in the cluster to address performance metrics such as fairness and mean completion time. In this paper, we propose a new Hadoop cluster scheduling algorithm, which uses system information such as estimated job arrival rates and mean job execution times to make scheduling decisions. The objective of our algorithm is to improve mean completion time of submitted jobs. In addition to addressing this concern, our algorithm provides competitive performance under fairness and locality metrics (with respect to other well-known Hadoop scheduling algorithms - Fair Sharing and FIFO). This approach can be efficiently applied in heterogeneous clusters, in contrast to most Hadoop cluster scheduling algorithm work, which assumes homogeneous clusters. Using simulation, we demonstrate that our algorithm is a very promising candidate for deployment in real systems.</span>
+</p>
+
 <p><a name="bookmark2"></a><span class="font7" style="font-weight:bold;">1 Introduction</span></p>
-<p><span class="font4">Cloud computing provides massive clusters for efficient large scale computation and data analysis. MapReduce [5] is a well-known programming model which was first designed for improving the performance of large batch jobs on cloud computing systems. However, there is growing interest in employing MapReduce and its open-source implementation, called Hadoop, for various types of jobs. This leads to sharing a single Hadoop cluster between multiple users, which run a mix of long batch jobs and short interactive queries on a shared data set.</span></p>
-<p><span class="font4">Sharing a Hadoop cluster between multiple users has several advantages, such as statistical multiplexing (lowering costs), data locality (running computation where the data is), and increasing the utilization of the resources. During the past years companies have used Hadoop clusters for executing specific applications; for instance Facebook is using a Hadoop cluster for analyzing usage patterns to improve site design, spam detection, data mining and ad optimization [10].</span></p>
-<p><span class="font4">Assigning a new type of job to the current workload mix on a Hadoop cluster, may severely degrade the performance of the system, which may not be tolerable for certain applications. Moreover, heterogeneity is a neglected issue in most current Hadoop systems, which can also lead to poor performance. Here, heterogeneity can be with respect to both jobs and resources.</span></p>
-<p><span class="font4">The Hadoop scheduler is the centrepiece of a Hadoop system. Desired performance levels can be achieved by proper submission of jobs to resources. Primary Hadoop scheduling algorithms, like the FIFO algorithm and the Fair-sharing algorithm, are simple algorithms which use small amounts of system information to make quick scheduling decisions. The main concern in these algorithms is to quickly multiplex the incoming jobs on the available resources. Therefore, they use less system information. However, a scheduling decision based on a small amount of system information may cause some disadvantages such as less locality, and neglecting the heterogeneity of the system. As a result, the primary Hadoop scheduling algorithms may not be good choices for heterogeneous systems. In a heterogeneous Hadoop system, increasing parallelism without considering the difference between various resources and jobs in the system can result in poor performance. As a result of such considerations, it is useful to explore the possible performance gains by considering more sophisticated algorithms.</span></p>
-<p><span class="font4">Gathering more system information can have significant impact on making better scheduling decisions. It is possible to gather some Hadoop system information [7], which can be used in scheduling decisions. Research at UC-Berkeley [2] provides a means to estimate the mean job execution time based on the structure of the job, and the number of map and reduce tasks in each job. Moreover, in most Hadoop systems, multiple types of jobs are repeating according to various patterns. For example, the</span></p>
-<p><span class="font4">Spam detector applications run on the Face-book Hadoop cluster every night. Therefore, it is also may be possible to estimate the arrival rates of job types in some Hadoop systems.</span></p>
-<p><span class="font4">In this paper, we introduce a Hadoop scheduling algorithm which uses this system information to make appropriate scheduling decisions. The proposed algorithm takes into account the heterogeneity of both resources and jobs in assigning jobs to resources. Using the system information, it classifies the jobs into classes and finds a matching of the job classes to the resources based on the requirements of the job classes and features of the resources. At the time of a scheduling decision, the algorithm uses the matchings of the resources and the classes, and considers the priority, required minimum share, and fair share of users to make a scheduling decision. Our proposed algorithm is dynamic, and it updates its decisions based on changes in the parameters of the system.</span></p>
-<p><span class="font4">We extend a Hadoop simulator, MRSIM [6], to evaluate our proposed algorithm. We implement the four most common performance metrics for Hadoop systems: locality, fairness, satisfying the minimum share of the users, and mean completion time of jobs. We compare the performance of our algorithm with two commonly used Hadoop scheduling algorithms, the FIFO algorithm and the Fair-sharing algorithm [9]. The results show that our proposed algorithm has significantly better performance in reducing the mean completion time, and satisfying the required minimum shares. Moreover, its performance in the Locality and the Fairness performance metrics is very competitive with the other two algorithms. To the best of our knowledge, there is no Hadoop scheduling algorithm which simultaneously considers job and resource heterogeneity. The two main advantages of our proposed algorithm are increasing the utilization of the Hadoop cluster, and reducing the mean completion times by considering the heterogeneity in the Hadoop system.</span></p>
-<p><span class="font4">The remainder of this paper is organized as follows. In Section 2 we give a brief overview of a Hadoop system. Current Hadoop scheduling algorithms are given in Section 3. Our Hadoop system model is described and formally introduced in Section 4. Then, in Section 5, we formally present the performance metrics of interest. Our proposed Hadoop scheduling algorithm is introduced in Section 6. In Section 7, details of the environment in which we study our algorithm are provided, and we study the performance of our algorithm in various Hadoop systems. Finally, we provide some concluding remarks and discuss possible future work in the last section.</span></p>
+
+<p><span class="font4">Cloud computing provides massive clusters for efficient large scale computation and data analysis. MapReduce [5] is a well-known programming model which was first designed for improving the performance of large batch jobs on cloud computing systems. However, there is growing interest in employing MapReduce and its open-source implementation, called Hadoop, for various types of jobs. This leads to sharing a single Hadoop cluster between multiple users, which run a mix of long batch jobs and short interactive queries on a shared data set.</span>
+</p>
+
+<p><span class="font4">Sharing a Hadoop cluster between multiple users has several advantages, such as statistical multiplexing (lowering costs), data locality (running computation where the data is), and increasing the utilization of the resources. During the past years companies have used Hadoop clusters for executing specific applications; for instance Facebook is using a Hadoop cluster for analyzing usage patterns to improve site design, spam detection, data mining and ad optimization [10].</span>
+</p>
+
+<p><span class="font4">Assigning a new type of job to the current workload mix on a Hadoop cluster, may severely degrade the performance of the system, which may not be tolerable for certain applications. Moreover, heterogeneity is a neglected issue in most current Hadoop systems, which can also lead to poor performance. Here, heterogeneity can be with respect to both jobs and resources.</span>
+</p>
+
+<p><span class="font4">The Hadoop scheduler is the centrepiece of a Hadoop system. Desired performance levels can be achieved by proper submission of jobs to resources. Primary Hadoop scheduling algorithms, like the FIFO algorithm and the Fair-sharing algorithm, are simple algorithms which use small amounts of system information to make quick scheduling decisions. The main concern in these algorithms is to quickly multiplex the incoming jobs on the available resources. Therefore, they use less system information. However, a scheduling decision based on a small amount of system information may cause some disadvantages such as less locality, and neglecting the heterogeneity of the system. As a result, the primary Hadoop scheduling algorithms may not be good choices for heterogeneous systems. In a heterogeneous Hadoop system, increasing parallelism without considering the difference between various resources and jobs in the system can result in poor performance. As a result of such considerations, it is useful to explore the possible performance gains by considering more sophisticated algorithms.</span>
+</p>
+
+<p><span class="font4">Gathering more system information can have significant impact on making better scheduling decisions. It is possible to gather some Hadoop system information [7], which can be used in scheduling decisions. Research at UC-Berkeley [2] provides a means to estimate the mean job execution time based on the structure of the job, and the number of map and reduce tasks in each job. Moreover, in most Hadoop systems, multiple types of jobs are repeating according to various patterns. For example, the</span>
+</p>
+
+<p><span class="font4">Spam detector applications run on the Face-book Hadoop cluster every night. Therefore, it is also may be possible to estimate the arrival rates of job types in some Hadoop systems.</span>
+</p>
+
+<p><span class="font4">In this paper, we introduce a Hadoop scheduling algorithm which uses this system information to make appropriate scheduling decisions. The proposed algorithm takes into account the heterogeneity of both resources and jobs in assigning jobs to resources. Using the system information, it classifies the jobs into classes and finds a matching of the job classes to the resources based on the requirements of the job classes and features of the resources. At the time of a scheduling decision, the algorithm uses the matchings of the resources and the classes, and considers the priority, required minimum share, and fair share of users to make a scheduling decision. Our proposed algorithm is dynamic, and it updates its decisions based on changes in the parameters of the system.</span>
+</p>
+
+<p><span class="font4">We extend a Hadoop simulator, MRSIM [6], to evaluate our proposed algorithm. We implement the four most common performance metrics for Hadoop systems: locality, fairness, satisfying the minimum share of the users, and mean completion time of jobs. We compare the performance of our algorithm with two commonly used Hadoop scheduling algorithms, the FIFO algorithm and the Fair-sharing algorithm [9]. The results show that our proposed algorithm has significantly better performance in reducing the mean completion time, and satisfying the required minimum shares. Moreover, its performance in the Locality and the Fairness performance metrics is very competitive with the other two algorithms. To the best of our knowledge, there is no Hadoop scheduling algorithm which simultaneously considers job and resource heterogeneity. The two main advantages of our proposed algorithm are increasing the utilization of the Hadoop cluster, and reducing the mean completion times by considering the heterogeneity in the Hadoop system.</span>
+</p>
+
+<p><span class="font4">The remainder of this paper is organized as follows. In Section 2 we give a brief overview of a Hadoop system. Current Hadoop scheduling algorithms are given in Section 3. Our Hadoop system model is described and formally introduced in Section 4. Then, in Section 5, we formally present the performance metrics of interest. Our proposed Hadoop scheduling algorithm is introduced in Section 6. In Section 7, details of the environment in which we study our algorithm are provided, and we study the performance of our algorithm in various Hadoop systems. Finally, we provide some concluding remarks and discuss possible future work in the last section.</span>
+</p>
+
 <p><a name="bookmark3"></a><span class="font7" style="font-weight:bold;">2 Hadoop Systems</span></p>
-<p><span class="font4">Computing todays' large scale data processing applications requires thousands of resources. Cloud computing is a paradigm to provide such levels of computing resources. However, to harness the available resources for improving the performance of large applications, it is required to break down the applications into smaller pieces of computation, and execute them in parallel. MapReduce [5] is a programming model which provides an efficient framework for automatic parallelization and distribution, I/O scheduling, and monitoring the status of large scale computations and data analysis.</span></p>
-<p><span class="font4">Hadoop is an open-source implementation of MapReduce for reliable, scalable, and distributed computing. A distributed file system that underlies the Hadoop system provides efficient and reliable distributed data storage for applications involving large data sets. Users in Hadoop submit their jobs to the system, where each job consists of map functions and reduce functions. The Hadoop system breaks the submitted jobs into multiple map and reduce tasks. First, Hadoop runs the map tasks on each block of the input, and computes the key/value pairs from each part of the input. Then, it groups intermediate values by their key. Finally, it runs the reduce tasks on each group, which provides the jobs’ final result.</span></p>
-<p><span class="font4">The scheduler is a fundamental component of the Hadoop system. Scheduling in the Hadoop system is pool based, which means that when a resource is free, it sends a heartbeat to the scheduler. Upon receiving a heartbeat, the scheduler searches through all the queued jobs in the system, chooses a job based on some performance metric(s), and sends one task of the selected job to each free slot on the resource. The heartbeat message contains some information such as the number of currently free slots on the resource. Various Hadoop scheduling algorithms consider different performance metrics in making scheduling decision.</span></p>
+
+<p><span class="font4">Computing todays' large scale data processing applications requires thousands of resources. Cloud computing is a paradigm to provide such levels of computing resources. However, to harness the available resources for improving the performance of large applications, it is required to break down the applications into smaller pieces of computation, and execute them in parallel. MapReduce [5] is a programming model which provides an efficient framework for automatic parallelization and distribution, I/O scheduling, and monitoring the status of large scale computations and data analysis.</span>
+</p>
+
+<p><span class="font4">Hadoop is an open-source implementation of MapReduce for reliable, scalable, and distributed computing. A distributed file system that underlies the Hadoop system provides efficient and reliable distributed data storage for applications involving large data sets. Users in Hadoop submit their jobs to the system, where each job consists of map functions and reduce functions. The Hadoop system breaks the submitted jobs into multiple map and reduce tasks. First, Hadoop runs the map tasks on each block of the input, and computes the key/value pairs from each part of the input. Then, it groups intermediate values by their key. Finally, it runs the reduce tasks on each group, which provides the jobs’ final result.</span>
+</p>
+
+<p><span class="font4">The scheduler is a fundamental component of the Hadoop system. Scheduling in the Hadoop system is pool based, which means that when a resource is free, it sends a heartbeat to the scheduler. Upon receiving a heartbeat, the scheduler searches through all the queued jobs in the system, chooses a job based on some performance metric(s), and sends one task of the selected job to each free slot on the resource. The heartbeat message contains some information such as the number of currently free slots on the resource. Various Hadoop scheduling algorithms consider different performance metrics in making scheduling decision.</span>
+</p>
+
 <p><a name="bookmark4"></a><span class="font7" style="font-weight:bold;">3 Related Work</span></p>
-<p><span class="font4">MapReduce was initially designed for small teams in which a simple scheduling algorithm like FIFO can achieve an acceptable performance level. However, experience from deploying Hadoop in large systems shows that basic scheduling algorithms like FIFO can cause severe performance degradation; particularly in systems that share data among multiple users. As a result, the next generation scheduler in Hadoop, Hadoop on Demand (HOD) [3], addresses this issue by setting up private Hadoop clusters on demand. HOD allows the users to share a common file system while owning private Hadoop clusters on their allocated nodes. This approach failed in practice because it violated the data locality design of the original MapReduce scheduler, and it resulted in poor system utilization. To address some of these shortcomings, Hadoop recently added a scheduling plug-in framework with two additional schedulers that extend rather than replace the original the FIFO scheduler.</span></p>
+
+<p><span class="font4">MapReduce was initially designed for small teams in which a simple scheduling algorithm like FIFO can achieve an acceptable performance level. However, experience from deploying Hadoop in large systems shows that basic scheduling algorithms like FIFO can cause severe performance degradation; particularly in systems that share data among multiple users. As a result, the next generation scheduler in Hadoop, Hadoop on Demand (HOD) [3], addresses this issue by setting up private Hadoop clusters on demand. HOD allows the users to share a common file system while owning private Hadoop clusters on their allocated nodes. This approach failed in practice because it violated the data locality design of the original MapReduce scheduler, and it resulted in poor system utilization. To address some of these shortcomings, Hadoop recently added a scheduling plug-in framework with two additional schedulers that extend rather than replace the original the FIFO scheduler.</span>
+</p>
+
 <p><span class="font4">The additional schedulers are introduced in</span></p>
-<p><span class="font4">[9], where they are collectively known as Fair-sharing. In this work, a pool is defined for each user, each pool consisting of a number of map slots and reduce slots on a resource. Each user can use its pool to execute her jobs. If a pool of a user becomes idle, the slots of the pool are divided among other users to speed up the other jobs in the system. The Fair-sharing algorithm does not achieve good performance regarding locality. Therefore, in order to improve the data locality, a complementary algorithm for Fair-sharing is introduced in [10], called delay scheduling. Using the delay scheduling algorithm, when Fair-sharing chooses a job for the current free resource, and the resource does not contain the required data of the job, scheduling of the chosen job is postponed, and the algorithm finds another job. However, to limit the waiting time of the jobs, a threshold is defined; therefore, if scheduling of a job is postponed until the threshold is met, the job will be submitted to the next free resource. The proposed algorithms can perform much better than Hadoop’s default scheduling algorithm (FIFO); however, these algorithms do not consider heterogeneous systems in which resources have different capacities and users submit various types of jobs.</span></p>
-<p><span class="font4">In [1], the authors introduce a scheduling algorithm for MapReduce systems to minimize the total completion time, while improving the CPU and I/O utilization of the cluster. The algorithm defines Virtual Machines (VM), and decides how to allocate the VMs to each Hadoop job, and to the physical Hadoop resources. The algorithm formulates and solves a constrained optimization problem. To formulate the optimization problem a mathematical performance model is required for the different jobs in the system. The algorithm first runs all job types in the Hadoop system to build corresponding performance models. Then, assuming these jobs will be submitted multiple times to the Hadoop system, scheduling decisions for each job are made based on the solution of the defined optimization problem. The algorithm assumes that the job characteristics will not vary between runs, and also when a job is going to be executed on a resource, all its required data is placed on that node. The problem with this algorithm is that the algorithm can not make decisions when a new job with new characteristics joins the system. Moreover, the assumption that all of the data required by a job is available on the running resource, without considering the overhead of transmitting the data is unrealistic. Furthermore, Hadoop is very I/O intensive both for file system access and Map/Reduce scheduling, so virtualization incurs a high overhead.</span></p>
-<p><span class="font4">In [8], a Dynamic Priority (DP) parallel task scheduler is designed for Hadoop, which allows users to control their allocated capacity by dynamically adjusting their budgets. This algorithm prioritizes the users based on their spending, and allows capacity distribution across concurrent users to change dynamically based on user preferences. The core of this algorithm is a proportional share resource allocation mechanism that allows users to purchase or be granted a queue priority budget. This budget may be used to set spending rates denoting the willingness to pay a certain amount per Hadoop map or reduce task slot per time unit.</span></p>
+
+<p><span class="font4">[9], where they are collectively known as Fair-sharing. In this work, a pool is defined for each user, each pool consisting of a number of map slots and reduce slots on a resource. Each user can use its pool to execute her jobs. If a pool of a user becomes idle, the slots of the pool are divided among other users to speed up the other jobs in the system. The Fair-sharing algorithm does not achieve good performance regarding locality. Therefore, in order to improve the data locality, a complementary algorithm for Fair-sharing is introduced in [10], called delay scheduling. Using the delay scheduling algorithm, when Fair-sharing chooses a job for the current free resource, and the resource does not contain the required data of the job, scheduling of the chosen job is postponed, and the algorithm finds another job. However, to limit the waiting time of the jobs, a threshold is defined; therefore, if scheduling of a job is postponed until the threshold is met, the job will be submitted to the next free resource. The proposed algorithms can perform much better than Hadoop’s default scheduling algorithm (FIFO); however, these algorithms do not consider heterogeneous systems in which resources have different capacities and users submit various types of jobs.</span>
+</p>
+
+<p><span class="font4">In [1], the authors introduce a scheduling algorithm for MapReduce systems to minimize the total completion time, while improving the CPU and I/O utilization of the cluster. The algorithm defines Virtual Machines (VM), and decides how to allocate the VMs to each Hadoop job, and to the physical Hadoop resources. The algorithm formulates and solves a constrained optimization problem. To formulate the optimization problem a mathematical performance model is required for the different jobs in the system. The algorithm first runs all job types in the Hadoop system to build corresponding performance models. Then, assuming these jobs will be submitted multiple times to the Hadoop system, scheduling decisions for each job are made based on the solution of the defined optimization problem. The algorithm assumes that the job characteristics will not vary between runs, and also when a job is going to be executed on a resource, all its required data is placed on that node. The problem with this algorithm is that the algorithm can not make decisions when a new job with new characteristics joins the system. Moreover, the assumption that all of the data required by a job is available on the running resource, without considering the overhead of transmitting the data is unrealistic. Furthermore, Hadoop is very I/O intensive both for file system access and Map/Reduce scheduling, so virtualization incurs a high overhead.</span>
+</p>
+
+<p><span class="font4">In [8], a Dynamic Priority (DP) parallel task scheduler is designed for Hadoop, which allows users to control their allocated capacity by dynamically adjusting their budgets. This algorithm prioritizes the users based on their spending, and allows capacity distribution across concurrent users to change dynamically based on user preferences. The core of this algorithm is a proportional share resource allocation mechanism that allows users to purchase or be granted a queue priority budget. This budget may be used to set spending rates denoting the willingness to pay a certain amount per Hadoop map or reduce task slot per time unit.</span>
+</p>
+
 <p><a name="bookmark5"></a><span class="font7" style="font-weight:bold;">4 Hadoop System Model</span></p>
-<p><span class="font4">The Hadoop system consists of a cluster, which is a group of linked resources. The data in the Hadoop system is organized into files. The users submit jobs to the system, where each job consists of some tasks. Each task is either a map </span><span class="font4" style="font-style:italic;">task</span><span class="font4"> or a </span><span class="font4" style="font-style:italic;">reduce task.</span><span class="font4"> The Hadoop components related to our research are described as follows:</span></p>
-<p><span class="font4">1. &nbsp;&nbsp;&nbsp;The Hadoop system has a cluster. The cluster consists of a set of resources, where each resource has a computation unit, and a data storage unit. The computation unit consists of a set of slots (in most Hadoop systems, each CPU core is considered as one slot), and the data storage unit has a specific capacity. We assume a cluster with </span><span class="font4" style="font-style:italic;">M</span><span class="font4"> resources as follows:</span></p>
-<p><span class="font4" style="font-style:italic;">Cluster</span><span class="font4"> = </span><span class="font4" style="font-style:italic;">{Ri,..., Rm</span><span class="font4">}</span></p>
-<p><span class="font4" style="font-style:italic;">Rj</span><span class="font4"> =&lt; </span><span class="font4" style="font-style:italic;">Slotsj,Memj &gt;</span></p>
-<p><span class="font4" style="font-style:italic;">• &nbsp;&nbsp;&nbsp;Slotsj</span><span class="font4"> is a set of slots in resource </span><span class="font4" style="font-style:italic;">Rj</span><span class="font4">, where each slot </span><span class="font4" style="font-style:italic;">(slot<sup>kk</span><span class="font4"></sup>) has a specific execution rate (exec_rate|). Generally, slots belonging to one resource have the same execution rate.</span></p>
-<p><span class="font4" style="font-style:italic;">Slotsj</span><span class="font4"> = </span><span class="font4" style="font-style:italic;">{slotj,..., slot<sup>m</sup>}</span></p>
-<p><span class="font4" style="font-style:italic;">• &nbsp;&nbsp;&nbsp;Memj</span><span class="font4"> is the storage unit of resource </span><span class="font4" style="font-style:italic;">Rj</span><span class="font4">, which has a specific capacity </span><span class="font4" style="font-style:italic;">(capacityj</span><span class="font4">) and data retrieval rate </span><span class="font4" style="font-style:italic;">(retrieval.ratej</span><span class="font4">). The data retrieval rate of resource </span><span class="font4" style="font-style:italic;">Rj</span><span class="font4"> depends on the bandwidth within the storage unit of this resource.</span></p>
-<p><span class="font4">2. &nbsp;&nbsp;&nbsp;Data in the Hadoop system is organized into files, which are usually large. Each file is split into small pieces, which are called slices (usually, all slices in a system have the same size). We assume that there are </span><span class="font4" style="font-style:italic;">L</span><span class="font4"> files in the system, which are defined as follows:</span></p><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-1.png" style="width:115pt;height:52pt;"/>
-<p><span class="font5">3. We assume that there are </span><span class="font4" style="font-style:italic;">N</span><span class="font5"> users in the Hadoop system, where each user (Uj) submits a set of jobs to the system </span><span class="font4" style="font-style:italic;">(Jobsi).</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-2.png" style="width:138pt;height:59pt;"/></span></p>
-<p><span class="font5">The Hadoop system assigns a priority and a minimum share to each user based on a particular policy (e.g. the pricing policy of [8]). The number of slots assigned to user </span><span class="font4" style="font-style:italic;">U<sub>i</span><span class="font5"></sub> depends on her priority </span><span class="font4" style="font-style:italic;">(priorityi).</span><span class="font5"> The minimum share of a user </span><span class="font4" style="font-style:italic;">U<sub>i</sub> (minshare<sub>i</sub>)</span><span class="font5"> is the minimum number of slots that the system must provide for user U<sub>i</sub> at each point in time.</span></p>
-<p><span class="font5">In a Hadoop system, the set of jobs of a user is dynamic, meaning that the set of jobs for user U<sub>i</sub> at time ti may be completely different from the set of jobs of this user at time t<sub>2</sub>. Each job in the system consists of a number of </span><span class="font4" style="font-style:italic;">map tasks,</span><span class="font5"> and </span><span class="font4" style="font-style:italic;">reduce tasks.</span><span class="font5"> The sets of </span><span class="font4" style="font-style:italic;">map tasks,</span><span class="font5"> and </span><span class="font4" style="font-style:italic;">reduce tasks</span><span class="font5"> for the job J<sub>i</sub> is represented with </span><span class="font4" style="font-style:italic;">Maps</span><span class="font5"><sub>i</sub>, and </span><span class="font4" style="font-style:italic;">Reds<sub>i</sub>,</span><span class="font5"> respectively.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-3.png" style="width:118pt;height:21pt;"/></span></p>
-<p><span class="font5">Each </span><span class="font4" style="font-style:italic;">map task k</span><span class="font5"> of job i </span><span class="font4" style="font-style:italic;">(MT<sup>k</sup>)</span><span class="font5"> performs some processes on the slice </span><span class="font4" style="font-style:italic;">(slicej</span><span class="font5"> G </span><span class="font4" style="font-style:italic;">Fj</span><span class="font5">) where the required data for this task is located.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-4.png" style="width:140pt;height:23pt;"/></span></p>
-<p><span class="font5">Each </span><span class="font4" style="font-style:italic;">reduce task k</span><span class="font5"> of job </span><span class="font4" style="font-style:italic;">i (RT</span><span class="font5"><sup>k</sup>) receives and processes the results of some of the </span><span class="font4" style="font-style:italic;">map task</span><span class="font5">s of job </span><span class="font4" style="font-style:italic;">i</span><span class="font5">.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-5.png" style="width:124pt;height:21pt;"/></span></p>
-<p><span class="font5">The </span><span class="font4" style="font-style:italic;">mean-execTime(J<sub>i</sub>,Rj</span><span class="font5">) defines the mean execution time of job </span><span class="font4" style="font-style:italic;">J</span><span class="font5">i on resource </span><span class="font4" style="font-style:italic;">Rj</span><span class="font5">, and the corresponding execution rate is defined as follows: </span><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-6.png" style="width:156pt;height:39pt;"/></span></p>
+
+<p><span class="font4">The Hadoop system consists of a cluster, which is a group of linked resources. The data in the Hadoop system is organized into files. The users submit jobs to the system, where each job consists of some tasks. Each task is either a map </span><span
+		class="font4" style="font-style:italic;">task</span><span class="font4"> or a </span><span class="font4"
+																																															 style="font-style:italic;">reduce task.</span><span
+		class="font4"> The Hadoop components related to our research are described as follows:</span></p>
+
+<p><span class="font4">1. &nbsp;&nbsp;&nbsp;The Hadoop system has a cluster. The cluster consists of a set of resources, where each resource has a computation unit, and a data storage unit. The computation unit consists of a set of slots (in most Hadoop systems, each CPU core is considered as one slot), and the data storage unit has a specific capacity. We assume a cluster with </span><span
+		class="font4" style="font-style:italic;">M</span><span class="font4"> resources as follows:</span></p>
+
+<p><span class="font4" style="font-style:italic;">Cluster</span><span class="font4"> = </span><span class="font4"
+																																																		style="font-style:italic;">{Ri,..., Rm</span><span
+		class="font4">}</span></p>
+
+<p><span class="font4" style="font-style:italic;">Rj</span><span class="font4"> =&lt; </span><span class="font4"
+																																																	 style="font-style:italic;">Slotsj,Memj &gt;</span>
+</p>
+
+<p><span class="font4" style="font-style:italic;">• &nbsp;&nbsp;&nbsp;Slotsj</span><span class="font4"> is a set of slots in resource </span><span
+		class="font4" style="font-style:italic;">Rj</span><span class="font4">, where each slot </span><span class="font4"
+																																																				 style="font-style:italic;">(slot<sup>kk</sup></span><span
+		class="font4"></sup>) has a specific execution rate (exec_rate|). Generally, slots belonging to one resource have the same execution rate.</span>
+</p>
+
+<p><span class="font4" style="font-style:italic;">Slotsj</span><span class="font4"> = </span><span class="font4"
+																																																	 style="font-style:italic;">{slotj,..., slot<sup>m</sup>}</span>
+</p>
+
+<p><span class="font4" style="font-style:italic;">• &nbsp;&nbsp;&nbsp;Memj</span><span class="font4"> is the storage unit of resource </span><span
+		class="font4" style="font-style:italic;">Rj</span><span class="font4">, which has a specific capacity </span><span
+		class="font4" style="font-style:italic;">(capacityj</span><span class="font4">) and data retrieval rate </span><span
+		class="font4" style="font-style:italic;">(retrieval.ratej</span><span class="font4">). The data retrieval rate of resource </span><span
+		class="font4" style="font-style:italic;">Rj</span><span class="font4"> depends on the bandwidth within the storage unit of this resource.</span>
+</p>
+
+<p><span class="font4">2. &nbsp;&nbsp;&nbsp;Data in the Hadoop system is organized into files, which are usually large. Each file is split into small pieces, which are called slices (usually, all slices in a system have the same size). We assume that there are </span><span
+		class="font4" style="font-style:italic;">L</span><span class="font4"> files in the system, which are defined as follows:</span>
+</p>
+<img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-1.png"
+		style="width:115pt;height:52pt;"/>
+
+<p><span class="font5">3. We assume that there are </span><span class="font4" style="font-style:italic;">N</span><span
+		class="font5"> users in the Hadoop system, where each user (Uj) submits a set of jobs to the system </span><span
+		class="font4" style="font-style:italic;">(Jobsi).</span></p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-2.png"
+		style="width:138pt;height:59pt;"/></span></p>
+
+<p><span class="font5">The Hadoop system assigns a priority and a minimum share to each user based on a particular policy (e.g. the pricing policy of [8]). The number of slots assigned to user </span><span
+		class="font4" style="font-style:italic;">U<sub>i</sub></span><span class="font5"></sub>
+	depends on her priority </span><span class="font4" style="font-style:italic;">(priorityi).</span><span class="font5"> The minimum share of a user </span><span
+		class="font4" style="font-style:italic;">U<sub>i</sub> (minshare<sub>i</sub>)</span><span class="font5"> is the minimum number of slots that the system must provide for user U<sub>i</sub> at each point in time.</span>
+</p>
+
+<p><span class="font5">In a Hadoop system, the set of jobs of a user is dynamic, meaning that the set of jobs for user U<sub>i</sub> at time ti may be completely different from the set of jobs of this user at time t<sub>2</sub>. Each job in the system consists of a number of </span><span
+		class="font4" style="font-style:italic;">map tasks,</span><span class="font5"> and </span><span class="font4"
+																																																		style="font-style:italic;">reduce tasks.</span><span
+		class="font5"> The sets of </span><span class="font4" style="font-style:italic;">map tasks,</span><span
+		class="font5"> and </span><span class="font4" style="font-style:italic;">reduce tasks</span><span class="font5"> for the job J<sub>i</sub> is represented with </span><span
+		class="font4" style="font-style:italic;">Maps</span><span class="font5"><sub>i</sub>, and </span><span class="font4"
+																																																					 style="font-style:italic;">Reds<sub>i</sub>,</span><span
+		class="font5"> respectively.</span></p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-3.png"
+		style="width:118pt;height:21pt;"/></span></p>
+
+<p><span class="font5">Each </span><span class="font4" style="font-style:italic;">map task k</span><span class="font5"> of job i </span><span
+		class="font4" style="font-style:italic;">(MT<sup>k</sup>)</span><span class="font5"> performs some processes on the slice </span><span
+		class="font4" style="font-style:italic;">(slicej</span><span class="font5"> G </span><span class="font4"
+																																															 style="font-style:italic;">Fj</span><span
+		class="font5">) where the required data for this task is located.</span></p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-4.png"
+		style="width:140pt;height:23pt;"/></span></p>
+
+<p><span class="font5">Each </span><span class="font4" style="font-style:italic;">reduce task k</span><span
+		class="font5"> of job </span><span class="font4" style="font-style:italic;">i (RT</span><span
+		class="font5"><sup>k</sup>) receives and processes the results of some of the </span><span class="font4"
+																																															 style="font-style:italic;">map task</span><span
+		class="font5">s of job </span><span class="font4" style="font-style:italic;">i</span><span class="font5">.</span>
+</p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-5.png"
+		style="width:124pt;height:21pt;"/></span></p>
+
+<p><span class="font5">The </span><span class="font4"
+																				style="font-style:italic;">mean-execTime(J<sub>i</sub>,Rj</span><span
+		class="font5">) defines the mean execution time of job </span><span class="font4"
+																																				style="font-style:italic;">J</span><span
+		class="font5">i on resource </span><span class="font4" style="font-style:italic;">Rj</span><span class="font5">, and the corresponding execution rate is defined as follows: </span><span
+		class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-6.png"
+		style="width:156pt;height:39pt;"/></span></p>
+
 <p><a name="bookmark6"></a><span class="font7" style="font-weight:bold;">5 Performance Metrics</span></p>
-<p><span class="font5">In this section, first we define the following functions which return the status of the Hadoop system and will be used to define the performance metrics. Then, we introduce the performance metrics related to our scheduling problem.</span></p>
-<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">Tasks(U,t)</span><span class="font5"> and </span><span class="font4" style="font-style:italic;">Jobs(U,t)</span><span class="font5"> return the sets of tasks and jobs, respectively, of the user </span><span class="font4" style="font-style:italic;">U</span><span class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5">.</span></p>
-<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">ArriveTime(J</span><span class="font5">), </span><span class="font4" style="font-style:italic;">StartTime(J</span><span class="font5">), &nbsp;&nbsp;&nbsp;and </span><span class="font4" style="font-style:italic;">EndTime</span><span class="font5">(</span><span class="font4" style="font-style:italic;">J</span><span class="font5">) return the arrival time, start of execution time, and completion time of job </span><span class="font4" style="font-style:italic;">J</span><span class="font5">, respectively.</span></p>
-<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">TotalJobs</span><span class="font5">(</span><span class="font4" style="font-style:italic;">t</span><span class="font5">) returns the set of all the jobs which have arrived to the system up to time </span><span class="font4" style="font-style:italic;">t</span><span class="font5">.</span></p>
-<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">RunningTask(slot,t)</span><span class="font5"> returns the running task (if there is one) on the slot </span><span class="font4" style="font-style:italic;">slot</span><span class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5">. If there is no running task on the </span><span class="font4" style="font-style:italic;">slot</span><span class="font5">, the function returns </span><span class="font4" style="font-style:italic;">NULL</span><span class="font5">.</span></p>
-<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">Location(slice,t)</span><span class="font5"> returns the set of resources (</span><span class="font4" style="font-style:italic;">R</span><span class="font5">), which store the slice </span><span class="font4" style="font-style:italic;">slice</span><span class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5">.</span></p>
-<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">AssignedSlots(U, t)</span><span class="font5"> returns the set of slots which are executing the tasks of user </span><span class="font4" style="font-style:italic;">U</span><span class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5">.</span></p>
-<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">CompletedJobs</span><span class="font5">(</span><span class="font4" style="font-style:italic;">t</span><span class="font5">) returns the set of all jobs that have been completed up to time t. The function </span><span class="font4" style="font-style:italic;">CompletedTasks(t)</span><span class="font5"> is defined analogously for completed tasks.</span></p>
-<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">Demand(U,t)</span><span class="font5"> returns the set of tasks of the user </span><span class="font4" style="font-style:italic;">U</span><span class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5"> which have not yet been assigned to a slot.</span></p>
-<p><span class="font5">Using the above functions, we define four performance metrics that are useful for a Hadoop system:</span></p>
-<p><span class="font5">1. </span><span class="font4" style="font-style:italic;">MinShareDissatisfaction(t)</span><span class="font5"> measures how successful the scheduling algorithm is in satisfying the minimum share requirements of the users in the system. If there is a user in the system, whose current demand is not zero, and her current share</span></p>
+
+<p><span class="font5">In this section, first we define the following functions which return the status of the Hadoop system and will be used to define the performance metrics. Then, we introduce the performance metrics related to our scheduling problem.</span>
+</p>
+
+<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">Tasks(U,t)</span><span
+		class="font5"> and </span><span class="font4" style="font-style:italic;">Jobs(U,t)</span><span class="font5"> return the sets of tasks and jobs, respectively, of the user </span><span
+		class="font4" style="font-style:italic;">U</span><span class="font5"> at time </span><span class="font4"
+																																															 style="font-style:italic;">t</span><span
+		class="font5">.</span></p>
+
+<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4"
+																												style="font-style:italic;">ArriveTime(J</span><span
+		class="font5">), </span><span class="font4" style="font-style:italic;">StartTime(J</span><span class="font5">), &nbsp;&nbsp;&nbsp;and </span><span
+		class="font4" style="font-style:italic;">EndTime</span><span class="font5">(</span><span class="font4"
+																																														 style="font-style:italic;">J</span><span
+		class="font5">) return the arrival time, start of execution time, and completion time of job </span><span
+		class="font4" style="font-style:italic;">J</span><span class="font5">, respectively.</span></p>
+
+<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">TotalJobs</span><span
+		class="font5">(</span><span class="font4" style="font-style:italic;">t</span><span class="font5">) returns the set of all the jobs which have arrived to the system up to time </span><span
+		class="font4" style="font-style:italic;">t</span><span class="font5">.</span></p>
+
+<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4"
+																												style="font-style:italic;">RunningTask(slot,t)</span><span
+		class="font5"> returns the running task (if there is one) on the slot </span><span class="font4"
+																																											 style="font-style:italic;">slot</span><span
+		class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5">. If there is no running task on the </span><span
+		class="font4" style="font-style:italic;">slot</span><span class="font5">, the function returns </span><span
+		class="font4" style="font-style:italic;">NULL</span><span class="font5">.</span></p>
+
+<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4"
+																												style="font-style:italic;">Location(slice,t)</span><span
+		class="font5"> returns the set of resources (</span><span class="font4" style="font-style:italic;">R</span><span
+		class="font5">), which store the slice </span><span class="font4" style="font-style:italic;">slice</span><span
+		class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5">.</span>
+</p>
+
+<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4"
+																												style="font-style:italic;">AssignedSlots(U, t)</span><span
+		class="font5"> returns the set of slots which are executing the tasks of user </span><span class="font4"
+																																															 style="font-style:italic;">U</span><span
+		class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5">.</span>
+</p>
+
+<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4"
+																												style="font-style:italic;">CompletedJobs</span><span
+		class="font5">(</span><span class="font4" style="font-style:italic;">t</span><span class="font5">) returns the set of all jobs that have been completed up to time t. The function </span><span
+		class="font4" style="font-style:italic;">CompletedTasks(t)</span><span class="font5"> is defined analogously for completed tasks.</span>
+</p>
+
+<p><span class="font5">• &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">Demand(U,t)</span><span
+		class="font5"> returns the set of tasks of the user </span><span class="font4"
+																																		 style="font-style:italic;">U</span><span
+		class="font5"> at time </span><span class="font4" style="font-style:italic;">t</span><span class="font5"> which have not yet been assigned to a slot.</span>
+</p>
+
+<p><span class="font5">Using the above functions, we define four performance metrics that are useful for a Hadoop system:</span>
+</p>
+
+<p><span class="font5">1. </span><span class="font4" style="font-style:italic;">MinShareDissatisfaction(t)</span><span
+		class="font5"> measures how successful the scheduling algorithm is in satisfying the minimum share requirements of the users in the system. If there is a user in the system, whose current demand is not zero, and her current share</span>
+</p>
+
 <p><span class="font4">is lower than her minimum share, then we compute her Dissatisfaction as follows:</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-7.png" style="width:206pt;height:162pt;"/></span></p>
-<p><span class="font4" style="font-style:italic;">U.priority</span><span class="font4"> and </span><span class="font4" style="font-style:italic;">U.min_share</span><span class="font4"> denote the priority and the minimum share of the user </span><span class="font4" style="font-style:italic;">U</span><span class="font4">. </span><span class="font4" style="font-style:italic;">MinShareDissatisfaction(t)</span><span class="font4"> takes into account the distance of all the users from their </span><span class="font4" style="font-style:italic;">minshare.</span><span class="font4"> When comparing two algorithms, the algorithm which has smaller </span><span class="font4" style="font-style:italic;">MinShareDissatisfaction</span><span class="font4">(</span><span class="font4" style="font-style:italic;">t</span><span class="font4">) has better performance.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-8.png" style="width:169pt;height:48pt;"/></span></p>
-<p><span class="font4">2. </span><span class="font4" style="font-style:italic;">Fairness(t)</span><span class="font4"> measures how fair a scheduling algorithm is in dividing the resources among the users in the system. A fair algorithm gives the same share of resources to users with equal priority. However, when the priorities are not equal, then the user's share should be proportional to their priority. In order to compute the fairness of an algorithm, we should take into account the slots which are assigned to each user beyond her minimum share, which is represented with A(U,t).</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-9.png" style="width:186pt;height:20pt;"/></span></p>
-<p><span class="font4">Then, the average additional share of all the users with the same priority </span><span class="font4" style="font-style:italic;">(Users<sub>p</sub>) </span><span class="font4">is defined as: <img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-10.png" style="width:190pt;height:61pt;"/></span></p>
-<p><span class="font4">and </span><span class="font4" style="font-style:italic;">Fairness</span><span class="font4">(</span><span class="font4" style="font-style:italic;">t</span><span class="font4">) is computed by the sum of distances of all the users in one priority level from the average amount of that priority level.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-11.png" style="width:194pt;height:58pt;"/></span></p>
-<p><span class="font4">Comparing two algorithms, the algorithm which has lower </span><span class="font4" style="font-style:italic;">Fairness(t)</span><span class="font4"> achieves better performance.</span></p>
-<p><span class="font4">3. &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">Locality(t)</span><span class="font4"> is defined as the number of tasks which are running on the same resource as where their stored data are located. Since in the Hadoop system the input data size is large, and the </span><span class="font4" style="font-style:italic;">map tasks </span><span class="font4">of one job are required to send their results to the </span><span class="font4" style="font-style:italic;">reduce task</span><span class="font4">s of that job, the communication cost can be quite significant. A </span><span class="font4" style="font-style:italic;">map task</span><span class="font4"> is defined to be local on a resource </span><span class="font4" style="font-style:italic;">R</span><span class="font4">, if it is running on resource </span><span class="font4" style="font-style:italic;">R</span><span class="font4">, and its required slice is also stored on resource </span><span class="font4" style="font-style:italic;">R</span><span class="font4">. Comparing two scheduling algorithms, the algorithm which has larger </span><span class="font4" style="font-style:italic;">Locality(t)</span><span class="font4"> has better performance.</span></p>
-<p><span class="font4">4. &nbsp;&nbsp;&nbsp;</span><span class="font4" style="font-style:italic;">MeanCompletionTime(t)</span><span class="font4"> is the average completion time of all the completed jobs in the system.</span></p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-7.png"
+		style="width:206pt;height:162pt;"/></span></p>
+
+<p><span class="font4" style="font-style:italic;">U.priority</span><span class="font4"> and </span><span class="font4"
+																																																				 style="font-style:italic;">U.min_share</span><span
+		class="font4"> denote the priority and the minimum share of the user </span><span class="font4"
+																																											style="font-style:italic;">U</span><span
+		class="font4">. </span><span class="font4" style="font-style:italic;">MinShareDissatisfaction(t)</span><span
+		class="font4"> takes into account the distance of all the users from their </span><span class="font4"
+																																														style="font-style:italic;">minshare.</span><span
+		class="font4"> When comparing two algorithms, the algorithm which has smaller </span><span class="font4"
+																																															 style="font-style:italic;">MinShareDissatisfaction</span><span
+		class="font4">(</span><span class="font4" style="font-style:italic;">t</span><span class="font4">) has better performance.</span>
+</p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-8.png"
+		style="width:169pt;height:48pt;"/></span></p>
+
+<p><span class="font4">2. </span><span class="font4" style="font-style:italic;">Fairness(t)</span><span class="font4"> measures how fair a scheduling algorithm is in dividing the resources among the users in the system. A fair algorithm gives the same share of resources to users with equal priority. However, when the priorities are not equal, then the user's share should be proportional to their priority. In order to compute the fairness of an algorithm, we should take into account the slots which are assigned to each user beyond her minimum share, which is represented with A(U,t).</span>
+</p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-9.png"
+		style="width:186pt;height:20pt;"/></span></p>
+
+<p><span class="font4">Then, the average additional share of all the users with the same priority </span><span
+		class="font4" style="font-style:italic;">(Users<sub>p</sub>) </span><span class="font4">is defined as: <img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-10.png"
+		style="width:190pt;height:61pt;"/></span></p>
+
+<p><span class="font4">and </span><span class="font4" style="font-style:italic;">Fairness</span><span
+		class="font4">(</span><span class="font4" style="font-style:italic;">t</span><span class="font4">) is computed by the sum of distances of all the users in one priority level from the average amount of that priority level.</span>
+</p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-11.png"
+		style="width:194pt;height:58pt;"/></span></p>
+
+<p><span class="font4">Comparing two algorithms, the algorithm which has lower </span><span class="font4"
+																																														style="font-style:italic;">Fairness(t)</span><span
+		class="font4"> achieves better performance.</span></p>
+
+<p><span class="font4">3. &nbsp;&nbsp;&nbsp;</span><span class="font4"
+																												 style="font-style:italic;">Locality(t)</span><span
+		class="font4"> is defined as the number of tasks which are running on the same resource as where their stored data are located. Since in the Hadoop system the input data size is large, and the </span><span
+		class="font4" style="font-style:italic;">map tasks </span><span class="font4">of one job are required to send their results to the </span><span
+		class="font4" style="font-style:italic;">reduce task</span><span class="font4">s of that job, the communication cost can be quite significant. A </span><span
+		class="font4" style="font-style:italic;">map task</span><span
+		class="font4"> is defined to be local on a resource </span><span class="font4"
+																																		 style="font-style:italic;">R</span><span
+		class="font4">, if it is running on resource </span><span class="font4" style="font-style:italic;">R</span><span
+		class="font4">, and its required slice is also stored on resource </span><span class="font4"
+																																									 style="font-style:italic;">R</span><span
+		class="font4">. Comparing two scheduling algorithms, the algorithm which has larger </span><span class="font4"
+																																																		 style="font-style:italic;">Locality(t)</span><span
+		class="font4"> has better performance.</span>
+</p>
+
+<p><span class="font4">4. &nbsp;&nbsp;&nbsp;</span><span class="font4"
+																												 style="font-style:italic;">MeanCompletionTime(t)</span><span
+		class="font4"> is the average completion time of all the completed jobs in the system.</span></p>
+
 <p><span class="font7" style="font-weight:bold;">6 Proposed &nbsp;&nbsp;&nbsp;Scheduler</span></p>
+
 <p><span class="font7" style="font-weight:bold;">Model</span></p>
-<p><span class="font4">In this section we first discuss the characteristics of our proposed algorithm, comparing them with current Hadoop scheduling algorithms. Then, we present our proposed scheduling algorithm for the Hadoop system.</span></p>
+
+<p><span class="font4">In this section we first discuss the characteristics of our proposed algorithm, comparing them with current Hadoop scheduling algorithms. Then, we present our proposed scheduling algorithm for the Hadoop system.</span>
+</p>
+
 <p><a name="bookmark7"></a><span class="font6" style="font-weight:bold;">6.1 Motivating Our Algorithm</span></p>
-<p><span class="font4">In this part we discuss the important characteristics of our proposed algorithm, based on the challenges of the Hadoop system.</span></p>
-<p><a name="bookmark8"></a><span class="font4">1. </span><span class="font4" style="font-weight:bold;">Scheduling based on fairness, minimum share requirements, and the heterogeneity of jobs and resources.</span></p>
-<p><span class="font4">In a Hadoop system satisfying the minimum shares of the users is the first critical issue. The next important issue is fairness. We design a scheduling algorithm which has two stages. In the first stage, the algorithm considers the satisfaction of the minimum share requirements of all the users. Then, in the second stage, the algorithm considers fairness among all the users in the system. Most current Hadoop scheduling algorithms consider fairness and minimum share objectives without considering the heterogeneity of the jobs and the resources. One of the advantages of our proposed algorithm is that while our proposed algorithm satisfies the fairness and the minimum share requirements, it further matches jobs with resources based on job features (e.g. estimated execution time) and resource features (e.g. execution rate). Consequently, the algorithm reduces the completion time of jobs in the system.</span></p>
+
+<p><span class="font4">In this part we discuss the important characteristics of our proposed algorithm, based on the challenges of the Hadoop system.</span>
+</p>
+
+<p><a name="bookmark8"></a><span class="font4">1. </span><span class="font4" style="font-weight:bold;">Scheduling based on fairness, minimum share requirements, and the heterogeneity of jobs and resources.</span>
+</p>
+
+<p><span class="font4">In a Hadoop system satisfying the minimum shares of the users is the first critical issue. The next important issue is fairness. We design a scheduling algorithm which has two stages. In the first stage, the algorithm considers the satisfaction of the minimum share requirements of all the users. Then, in the second stage, the algorithm considers fairness among all the users in the system. Most current Hadoop scheduling algorithms consider fairness and minimum share objectives without considering the heterogeneity of the jobs and the resources. One of the advantages of our proposed algorithm is that while our proposed algorithm satisfies the fairness and the minimum share requirements, it further matches jobs with resources based on job features (e.g. estimated execution time) and resource features (e.g. execution rate). Consequently, the algorithm reduces the completion time of jobs in the system.</span>
+</p>
+
 <p><a name="bookmark9"></a><span class="font4">2. &nbsp;&nbsp;&nbsp;Reducing communication costs. In a</span></p>
-<p><span class="font4">Hadoop cluster, the network links among the resources have varying bandwidth capabilities. Moreover, in a large cluster, the resources are often located far from each other. The Hadoop system distributes tasks among the resources to reduce a job’s completion time. However, Hadoop does not consider the communication costs among the resources. In a large cluster with heterogenous resources, maximizing a task’s distribution may result in significant communication costs. Therefore, the corresponding job’s completion time will be increased. In our proposed algorithm, we consider the heterogeneity and distribution of resources in the task assignment.</span></p>
-<p><span class="font4">3. &nbsp;&nbsp;&nbsp;Reducing the search overhead for matching jobs and resources. To find the best matching of jobs and resources, an exhaustive search is required. In our algorithm, we use clustering techniques to restrict the search space. Jobs are classified based on their requirements. Every time a resource is available, it searches through the classes of jobs (rather than the individual jobs) to find the best matching (using</span></p>
-<p><span class="font4">optimization techniques). The solution of the optimization problem results in the set of suggested classes for each resource. The suggested set for each resource is used for making the routing decision. We limit the number of times that this optimization is performed, in order to avoid adding significant overhead.</span></p>
-<p><span class="font4">4. Increasing locality. In order to increase locality in a Hadoop system, we should increase the probability that tasks are assigned to resources which also store their input data. Our algorithm makes a scheduling decision based on the suggested set of job classes for each resource. Therefore, we can replicate the required data of the suggested classes of a resource, on that resource. Consequently, locality will be increased in the system.</span></p>
+
+<p><span class="font4">Hadoop cluster, the network links among the resources have varying bandwidth capabilities. Moreover, in a large cluster, the resources are often located far from each other. The Hadoop system distributes tasks among the resources to reduce a job’s completion time. However, Hadoop does not consider the communication costs among the resources. In a large cluster with heterogenous resources, maximizing a task’s distribution may result in significant communication costs. Therefore, the corresponding job’s completion time will be increased. In our proposed algorithm, we consider the heterogeneity and distribution of resources in the task assignment.</span>
+</p>
+
+<p><span class="font4">3. &nbsp;&nbsp;&nbsp;Reducing the search overhead for matching jobs and resources. To find the best matching of jobs and resources, an exhaustive search is required. In our algorithm, we use clustering techniques to restrict the search space. Jobs are classified based on their requirements. Every time a resource is available, it searches through the classes of jobs (rather than the individual jobs) to find the best matching (using</span>
+</p>
+
+<p><span class="font4">optimization techniques). The solution of the optimization problem results in the set of suggested classes for each resource. The suggested set for each resource is used for making the routing decision. We limit the number of times that this optimization is performed, in order to avoid adding significant overhead.</span>
+</p>
+
+<p><span class="font4">4. Increasing locality. In order to increase locality in a Hadoop system, we should increase the probability that tasks are assigned to resources which also store their input data. Our algorithm makes a scheduling decision based on the suggested set of job classes for each resource. Therefore, we can replicate the required data of the suggested classes of a resource, on that resource. Consequently, locality will be increased in the system.</span>
+</p>
+
 <p><a name="bookmark10"></a><span class="font6" style="font-weight:bold;">6.2 Proposed Algorithm</span></p>
-<p><span class="font4">In this section, we first present a high level view of our proposed algorithm (in Figure 1), and then we discuss different parts of our algorithm in more detail.</span></p>
-<p><span class="font4">A typical Hadoop scheduler receives two main messages: a new job arrival message from a user, and a heartbeat message from a free resource. Therefore, our proposed scheduler consists of two main processes, where each process is triggered by receiving one of these messages. Upon receiving a new job from a user, the scheduler performs a queueing process to store the incoming job in an appropriate queue.</span></p>
-<p><span class="font4">When receiving a heartbeat message from a resource, the scheduler triggers the routing process to assign a job to the free resource. Our algorithm uses the job’s classification, so when a new job arrives to the system, the queueing process specifies the class of this job, and stores the job in the queue of its class. The queueing process sends the updated information of all of the classes to the routing process, where the routing process uses this information to choose a job for the current free resource. In what follows, we provide greater detail for our proposed algorithm.</span></p>
-<p><a name="bookmark11"></a><span class="font15">1. &nbsp;&nbsp;&nbsp;Job Execution Time Estimation:</span></p><div><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-12.jpg" style="width:293pt;height:379pt;"/>
-<p><span class="font15">Figure 1: High level view of our proposed algorithm</span></p></div><br clear="all"/>
-<p><span class="font15">When a new job arrives to the system, it is required to estimate its mean execution time on the resources. The Task Scheduler component uses the Program Analyzer to estimate the mean execution time of the new incoming job on all resources </span><span class="font15" style="font-style:italic;">(mean-execTime(Ji,Rj</span><span class="font15">)). The Task Scheduler component has been introduced in the AMP lab in UC Berkeley [2].</span></p>
-<p><span class="font15">2. &nbsp;&nbsp;&nbsp;Two Classifications: The Hadoop system requires that upon a user’s request at any time, it will provide her minimum</span></p>
-<p><span class="font15">share immediately. Therefore, it is critical for the system to first consider satisfying the minimum shares of all users. After satisfying the minimum shares, the system should consider dividing the resources among the users in a fair way (to prevent starvation of any user). Based on these two facts, our algorithm has two classifications: minimum share classification, and fairness classification. In the minimum share classification, only the jobs whose users have </span><span class="font15" style="font-style:italic;">minshare &gt;</span><span class="font15">&nbsp;0 are considered, while in the fairness classification all the jobs in the system are considered.</span></p>
-<p><span class="font15">When a user asks for more than her minimum share, the scheduler assigns her minimum share immediately but the extra share will be assigned fairly after considering all users. As a result, users with </span><span class="font15" style="font-style:italic;">minshare &gt;</span><span class="font15">&nbsp;0 first should be considered in the minimum share classification, and once they receive their minimum shares, they should be considered in the fairness classification. However, the current share of a user, and consequently her minimum share satisfaction can be highly varying over time, and it is not feasible to generate a new classification each time the minimum share satisfaction changes. Therefore, we consider a job whose user has </span><span class="font15" style="font-style:italic;">minshare &gt;</span><span class="font15">&nbsp;0 in both classifications, and make the scheduling decision for the job based on its user's status at the time of scheduling.</span></p>
-<p><span class="font15">In our algorithm, both the minimum share, and the fairness classifications classify the jobs such that the jobs in the same class have the same features (i.e, priority, execution rate on the resources (</span><span class="font15" style="font-style:italic;">mean_execRate(Jj, Rj</span><span class="font15">)), and arrival rate). We define the set of classes generated in the minimum share classification as </span><span class="font15" style="font-style:italic;">JobClassesl,</span><span class="font15"> where each class is denoted by Cj. Each class C has a specific priority, which is equal to the priority of the jobs in this class. The estimated arrival rate of the jobs in class Cj is denoted by </span><span class="font15" style="font-style:italic;">a</span><span class="font15">, and the estimated execution rate of jobs in class C on resource </span><span class="font15" style="font-style:italic;">Rj</span><span class="font15"> is denoted by ^,j. Hence, the heterogeneity of resources is completely addressed with yUj j. We assume that the total number of classes generated with this classification is </span><span class="font15" style="font-style:italic;">F</span><span class="font15">.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-13.png" style="width:145pt;height:23pt;"/></span></p>
-<p><span class="font15">The fairness classification is the same as the minimum share classification; however, the difference is that this classification is done on all the jobs regardless of their users’ </span><span class="font15" style="font-style:italic;">minshare</span><span class="font15"> amount. We define the set of classes generated by this classification as </span><span class="font15" style="font-style:italic;">JobClasses2.</span><span class="font15"> Each class, denoted by Cj, has a specific priority, which is equal to the priority of the jobs in this class. The</span></p>
-<p><span class="font15">arrival rate of the jobs in class </span><span class="font15" style="font-style:italic;">Cj</span><span class="font15"> is equal to aj, and the execution rate of the jobs in class </span><span class="font15" style="font-style:italic;">Cj</span><span class="font15"> on resource </span><span class="font15" style="font-style:italic;">Rj</span><span class="font15"> is represented with yU,j j. We assume that the total number of classes generated with this classification is </span><span class="font15" style="font-style:italic;">F</span><span class="font15"><sup>j</sup>.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-14.png" style="width:177pt;height:20pt;"/></span></p>
-<p><span class="font15">For example, Yahoo uses the Hadoop system in production for a variety of products (job types) [4]: Data Analytics, Content Optimization, Yahoo! Mail Anti-Spam, Ad Products, and several other applications. Typically, the Hadoop system de-</span></p>
+
+<p><span class="font4">In this section, we first present a high level view of our proposed algorithm (in Figure 1), and then we discuss different parts of our algorithm in more detail.</span>
+</p>
+
+<p><span class="font4">A typical Hadoop scheduler receives two main messages: a new job arrival message from a user, and a heartbeat message from a free resource. Therefore, our proposed scheduler consists of two main processes, where each process is triggered by receiving one of these messages. Upon receiving a new job from a user, the scheduler performs a queueing process to store the incoming job in an appropriate queue.</span>
+</p>
+
+<p><span class="font4">When receiving a heartbeat message from a resource, the scheduler triggers the routing process to assign a job to the free resource. Our algorithm uses the job’s classification, so when a new job arrives to the system, the queueing process specifies the class of this job, and stores the job in the queue of its class. The queueing process sends the updated information of all of the classes to the routing process, where the routing process uses this information to choose a job for the current free resource. In what follows, we provide greater detail for our proposed algorithm.</span>
+</p>
+
+<p><a name="bookmark11"></a><span class="font15">1. &nbsp;&nbsp;&nbsp;Job Execution Time Estimation:</span></p>
+
+<div><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-12.jpg"
+		style="width:293pt;height:379pt;"/>
+
+	<p><span class="font15">Figure 1: High level view of our proposed algorithm</span></p>
+</div>
+<br clear="all"/>
+
+<p><span class="font15">When a new job arrives to the system, it is required to estimate its mean execution time on the resources. The Task Scheduler component uses the Program Analyzer to estimate the mean execution time of the new incoming job on all resources </span><span
+		class="font15" style="font-style:italic;">(mean-execTime(Ji,Rj</span><span class="font15">)). The Task Scheduler component has been introduced in the AMP lab in UC Berkeley [2].</span>
+</p>
+
+<p><span class="font15">2. &nbsp;&nbsp;&nbsp;Two Classifications: The Hadoop system requires that upon a user’s request at any time, it will provide her minimum</span>
+</p>
+
+<p><span class="font15">share immediately. Therefore, it is critical for the system to first consider satisfying the minimum shares of all users. After satisfying the minimum shares, the system should consider dividing the resources among the users in a fair way (to prevent starvation of any user). Based on these two facts, our algorithm has two classifications: minimum share classification, and fairness classification. In the minimum share classification, only the jobs whose users have </span><span
+		class="font15" style="font-style:italic;">minshare &gt;</span><span class="font15">&nbsp;0 are considered, while in the fairness classification all the jobs in the system are considered.</span>
+</p>
+
+<p><span class="font15">When a user asks for more than her minimum share, the scheduler assigns her minimum share immediately but the extra share will be assigned fairly after considering all users. As a result, users with </span><span
+		class="font15" style="font-style:italic;">minshare &gt;</span><span class="font15">&nbsp;0 first should be considered in the minimum share classification, and once they receive their minimum shares, they should be considered in the fairness classification. However, the current share of a user, and consequently her minimum share satisfaction can be highly varying over time, and it is not feasible to generate a new classification each time the minimum share satisfaction changes. Therefore, we consider a job whose user has </span><span
+		class="font15" style="font-style:italic;">minshare &gt;</span><span class="font15">&nbsp;0 in both classifications, and make the scheduling decision for the job based on its user's status at the time of scheduling.</span>
+</p>
+
+<p><span class="font15">In our algorithm, both the minimum share, and the fairness classifications classify the jobs such that the jobs in the same class have the same features (i.e, priority, execution rate on the resources (</span><span
+		class="font15" style="font-style:italic;">mean_execRate(Jj, Rj</span><span class="font15">)), and arrival rate). We define the set of classes generated in the minimum share classification as </span><span
+		class="font15" style="font-style:italic;">JobClassesl,</span><span class="font15"> where each class is denoted by Cj. Each class C has a specific priority, which is equal to the priority of the jobs in this class. The estimated arrival rate of the jobs in class Cj is denoted by </span><span
+		class="font15" style="font-style:italic;">a</span><span class="font15">, and the estimated execution rate of jobs in class C on resource </span><span
+		class="font15" style="font-style:italic;">Rj</span><span class="font15"> is denoted by ^,j. Hence, the heterogeneity of resources is completely addressed with yUj j. We assume that the total number of classes generated with this classification is </span><span
+		class="font15" style="font-style:italic;">F</span><span class="font15">.</span></p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-13.png"
+		style="width:145pt;height:23pt;"/></span></p>
+
+<p><span class="font15">The fairness classification is the same as the minimum share classification; however, the difference is that this classification is done on all the jobs regardless of their users’ </span><span
+		class="font15" style="font-style:italic;">minshare</span><span class="font15"> amount. We define the set of classes generated by this classification as </span><span
+		class="font15" style="font-style:italic;">JobClasses2.</span><span class="font15"> Each class, denoted by Cj, has a specific priority, which is equal to the priority of the jobs in this class. The</span>
+</p>
+
+<p><span class="font15">arrival rate of the jobs in class </span><span class="font15"
+																																			 style="font-style:italic;">Cj</span><span
+		class="font15"> is equal to aj, and the execution rate of the jobs in class </span><span class="font15"
+																																														 style="font-style:italic;">Cj</span><span
+		class="font15"> on resource </span><span class="font15" style="font-style:italic;">Rj</span><span class="font15"> is represented with yU,j j. We assume that the total number of classes generated with this classification is </span><span
+		class="font15" style="font-style:italic;">F</span><span class="font15"><sup>j</sup>.</span></p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-14.png"
+		style="width:177pt;height:20pt;"/></span></p>
+
+<p><span class="font15">For example, Yahoo uses the Hadoop system in production for a variety of products (job types) [4]: Data Analytics, Content Optimization, Yahoo! Mail Anti-Spam, Ad Products, and several other applications. Typically, the Hadoop system de-</span>
+</p>
 <table border="1">
-<tr><td>
-<p><span class="font12">User</span></p></td><td>
-<p><span class="font12">Job Type</span></p></td><td>
-<p><span class="font12">min_share</span></p></td><td>
-<p><span class="font12">priority</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User1</span></p></td><td>
-<p><span class="font12">Advertisement Products</span></p></td><td>
-<p><span class="font12">50</span></p></td><td>
-<p><span class="font12">3</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User2</span></p></td><td>
-<p><span class="font12">Data Analytics</span></p></td><td>
-<p><span class="font1">20</span></p></td><td>
-<p><span class="font12">2</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User3</span></p></td><td>
-<p><span class="font12">Advertisement Targeting</span></p></td><td>
-<p><span class="font12">40</span></p></td><td>
-<p><span class="font12">3</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User4</span></p></td><td>
-<p><span class="font12">Search Ranking</span></p></td><td>
-<p><span class="font12">30</span></p></td><td>
-<p><span class="font12">2</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User5</span></p></td><td>
-<p><span class="font12">Yahoo! Mail Anti-Spam</span></p></td><td>
-<p><span class="font11">0</span></p></td><td>
-<p><span class="font18">1</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User6</span></p></td><td>
-<p><span class="font12">User Interest Prediction</span></p></td><td>
-<p><span class="font1">0</span></p></td><td>
-<p><span class="font12">2</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font12">User</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Job Type</span></p>
+		</td>
+		<td>
+			<p><span class="font12">min_share</span></p>
+		</td>
+		<td>
+			<p><span class="font12">priority</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User1</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Advertisement Products</span></p>
+		</td>
+		<td>
+			<p><span class="font12">50</span></p>
+		</td>
+		<td>
+			<p><span class="font12">3</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User2</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Data Analytics</span></p>
+		</td>
+		<td>
+			<p><span class="font1">20</span></p>
+		</td>
+		<td>
+			<p><span class="font12">2</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User3</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Advertisement Targeting</span></p>
+		</td>
+		<td>
+			<p><span class="font12">40</span></p>
+		</td>
+		<td>
+			<p><span class="font12">3</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User4</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Search Ranking</span></p>
+		</td>
+		<td>
+			<p><span class="font12">30</span></p>
+		</td>
+		<td>
+			<p><span class="font12">2</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User5</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Yahoo! Mail Anti-Spam</span></p>
+		</td>
+		<td>
+			<p><span class="font11">0</span></p>
+		</td>
+		<td>
+			<p><span class="font18">1</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User6</span></p>
+		</td>
+		<td>
+			<p><span class="font12">User Interest Prediction</span></p>
+		</td>
+		<td>
+			<p><span class="font1">0</span></p>
+		</td>
+		<td>
+			<p><span class="font12">2</span></p>
+		</td>
+	</tr>
 </table>
 <p><span class="font15">Table 1: The Hadoop System Example (Exp1)</span></p>
-<p><span class="font15">fines a user for each job type, and the system assigns a minimum share and a priority to each user. For example, assume a Hadoop system (called Exp1) with the parameters in Table 1. The jobs in the Exp1 system, at a given time </span><span class="font15" style="font-style:italic;">t</span><span class="font15">, are presented in Table 2, where the submitted jobs of a user are based on the user’s job type (e.g., </span><span class="font15" style="font-style:italic;">J<sub>4</span><span class="font15"></sub> which is submitted by user1 is an advertisement product, while the job </span><span class="font15" style="font-style:italic;">J<sub>5</span><span class="font15"></sub> is a search ranking job). The minimum</span></p>
+
+<p><span class="font15">fines a user for each job type, and the system assigns a minimum share and a priority to each user. For example, assume a Hadoop system (called Exp1) with the parameters in Table 1. The jobs in the Exp1 system, at a given time </span>
+	<span class="font15" style="font-style:italic;">t</span> <span class="font15">, are presented in Table 2, where the submitted jobs of a user are based on the user’s job type (e.g., </span>
+	<span class="font15" style="font-style:italic;">J<sub>4</sub></span> <span class="font15"></sub> which is submitted by user1 is an advertisement product, while the job </span><span
+			class="font15" style="font-style:italic;">J<sub>5</sub></span> <span class="font15"></sub> is a search ranking job). The minimum</span>
+</p>
 <table border="1">
-<tr><td>
-<p><span class="font12">User</span></p></td><td>
-<p><span class="font12">Job Queue</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User1</span></p></td><td>
-<p><span class="font21" style="font-style:italic;"><sup>{J</span><span class="font11" style="font-style:italic;"></sup>4</span><span class="font21" style="font-style:italic;">,</span><span class="font20"> <sup>J</sup>io, </span><span class="font21" style="font-style:italic;">J</span><span class="font20">13, J17}</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User2</span></p></td><td>
-<p><span class="font11">{ </span><span class="font19" style="font-style:italic;">Ji, J</span><span class="font11">5</span><span class="font19" style="font-style:italic;">, J9, J12,</span><span class="font11"> J18}</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User3</span></p></td><td>
-<p><span class="font11">{ </span><span class="font19" style="font-style:italic;">J2, J</span><span class="font11" style="font-style:italic;">8</span><span class="font19" style="font-style:italic;">,</span><span class="font11"> J20}</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User4</span></p></td><td>
-<p><span class="font19" style="font-style:italic;">{J</span><span class="font11" style="font-style:italic;">6</span><span class="font19" style="font-style:italic;">, J</span><span class="font11">14</span><span class="font19" style="font-style:italic;">,</span><span class="font11"> Ji6, J21}</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User5</span></p></td><td>
-<p><span class="font15" style="font-style:italic;">{J</span><span class="font10" style="font-style:italic;">7</span><span class="font15" style="font-style:italic;">,</span><span class="font15"> Ji5}</span></p></td></tr>
-<tr><td>
-<p><span class="font12">User6</span></p></td><td>
-<p><span class="font14" style="font-weight:bold;">{ J</span><span class="font0">3</span><span class="font14" style="font-weight:bold;"> , Jii, Ji9}</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font12">User</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Job Queue</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User1</span></p>
+		</td>
+		<td>
+			<p><span class="font21" style="font-style:italic;"><sup>{J</sup></span><span class="font11"
+																																									 style="font-style:italic;"></sup>
+				4</span><span class="font21" style="font-style:italic;">,</span><span
+					class="font20"> <sup>J</sup>io, </span><span class="font21" style="font-style:italic;">J</span><span
+					class="font20">13, J17}</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User2</span></p>
+		</td>
+		<td>
+			<p><span class="font11">{ </span><span class="font19" style="font-style:italic;">Ji, J</span><span class="font11">5</span><span
+					class="font19" style="font-style:italic;">, J9, J12,</span><span class="font11"> J18}</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User3</span></p>
+		</td>
+		<td>
+			<p><span class="font11">{ </span><span class="font19" style="font-style:italic;">J2, J</span><span class="font11"
+																																																				 style="font-style:italic;">8</span><span
+					class="font19" style="font-style:italic;">,</span><span class="font11"> J20}</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User4</span></p>
+		</td>
+		<td>
+			<p><span class="font19" style="font-style:italic;">{J</span><span class="font11"
+																																				style="font-style:italic;">6</span><span
+					class="font19" style="font-style:italic;">, J</span><span class="font11">14</span><span class="font19"
+																																																	style="font-style:italic;">,</span><span
+					class="font11"> Ji6, J21}</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User5</span></p>
+		</td>
+		<td>
+			<p><span class="font15" style="font-style:italic;">{J</span><span class="font10"
+																																				style="font-style:italic;">7</span><span
+					class="font15" style="font-style:italic;">,</span><span class="font15"> Ji5}</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font12">User6</span></p>
+		</td>
+		<td>
+			<p><span class="font14" style="font-weight:bold;">{ J</span><span class="font0">3</span><span class="font14"
+																																																		style="font-weight:bold;"> , Jii, Ji9}</span>
+			</p>
+		</td>
+	</tr>
 </table>
-<p><span class="font15">Table 2: The job queues in Exp1 at time </span><span class="font15" style="font-style:italic;">t</span></p>
-<p><span class="font15">share classification of the jobs in the Exp1 system, at time </span><span class="font15" style="font-style:italic;">t</span><span class="font15">, is presented in Figure</span></p>
-<p><span class="font15">2. Note that here we assume that there is just one resource in the system. In a system which has more than one resource, the mean execution time for each class is represented with an array, to show the execution time of the class on each resource. The fairness classification of system Exp1,</span></p>
-<p><span class="font15">3. Optimization approach: In order to find an appropriate matching of jobs and resources, we define an optimization problem based on the properties of the job classes and the features of the resources. The scheduler solves the following linear program (LP) for the classes in the set </span><span class="font15" style="font-style:italic;">JobClasses1.</span><span class="font15"> Here </span><span class="font15" style="font-style:italic;">5i,j</span><span class="font15"> is defined as the proportion of resource </span><span class="font15" style="font-style:italic;">R<sub>j</span><span class="font15"></sub> which is allocated to class C,, and A is the amount that we simultaneously increase arrival rates of all classes. We aim to maximize </span><span class="font15" style="font-style:italic;">A</span><span class="font15">, while keeping the system stable.</span></p><div>
-<p><span class="font12">max A</span></p><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-15.png" style="width:196pt;height:87pt;"/></div><br clear="all"/><div><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-16.jpg" style="width:198pt;height:77pt;"/>
-<p><span class="font15">Figure 2: The minimum share classification of the jobs in Exp1 system at time </span><span class="font15" style="font-style:italic;">t</span></p></div><br clear="all"/>
-<p><span class="font15">In the above LP, M is the total number of resources in the system, and F is the total number of minimum share classes (| </span><span class="font15" style="font-style:italic;">JobClasses1\).</span><span class="font15"> This optimization problem tries to minimize the maximum load over all resources. After solving this LP, we have the allocation matrix </span><span class="font15" style="font-style:italic;">3{,j</span><span class="font15"> for each class </span><span class="font15" style="font-style:italic;">Ci</span><span class="font15"> and each resource Rj. Based on the results of this LP, we define the set </span><span class="font15" style="font-style:italic;">SCj</span><span class="font15"> for each resource </span><span class="font15" style="font-style:italic;">Rj</span><span class="font15"> as follows:</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-17.png" style="width:160pt;height:20pt;"/></span></p><div>
-<p><span class="font15">at time </span><span class="font15" style="font-style:italic;">t</span><span class="font15">, is presented in Figure 3. Similar to the minimum share classification, we assume that there is just one resource in the system.</span></p><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-18.jpg" style="width:229pt;height:176pt;"/>
-<p><span class="font15">Figure 3: The fairness classification of the jobs in Exp1 system at time </span><span class="font15" style="font-style:italic;">t</span></p></div><br clear="all"/>
-<p><span class="font15">Note that this is the only place we use </span><span class="font15" style="font-style:italic;">di,j</span><span class="font15">, where its value is just used to find the non zero amounts for defining the set SCj. For example consider a system with two classes of jobs, and two resources (M = 2, F = 2), in which the arrival and execution rates are as follows:</span></p><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-19.png" style="width:188pt;height:73pt;"/>
-<p><span class="font15">Therefore, the sets for resources </span><span class="font15" style="font-style:italic;">R</span><span class="font15"><sub>1</sub> and </span><span class="font15" style="font-style:italic;">R</span><span class="font15"><sub>2</sub> will be SCi = {C</span><span class="font11">2</span><span class="font15">} and SC</span><span class="font11">2</span><span class="font15"> = {Ci, C</span><span class="font11">2</span><span class="font15">}, respectively. These two sets define the suggested classes for each resource, i.e. they suggest that upon receiving a heartbeat from resource Ri, select a job from class </span><span class="font15" style="font-style:italic;">C</span><span class="font15"><sub>2</sub> . However, upon receiving a heartbeat from the resource </span><span class="font15" style="font-style:italic;">R</span><span class="font10" style="font-style:italic;">2</span><span class="font15" style="font-style:italic;">,</span><span class="font15"> either choose a job from class Ci or C</span><span class="font11">2</span><span class="font15">. Even though resource Ri has the fastest rate for class Ci, the algorithm does not assign any jobs of class Ci to it. This occurs because, the system is highly loaded, and since &nbsp;&nbsp;&nbsp;and</span></p>
+<p><span class="font15">Table 2: The job queues in Exp1 at time </span><span class="font15"
+																																						 style="font-style:italic;">t</span></p>
+
+<p><span class="font15">share classification of the jobs in the Exp1 system, at time </span><span class="font15"
+																																																	style="font-style:italic;">t</span><span
+		class="font15">, is presented in Figure</span></p>
+
+<p><span class="font15">2. Note that here we assume that there is just one resource in the system. In a system which has more than one resource, the mean execution time for each class is represented with an array, to show the execution time of the class on each resource. The fairness classification of system Exp1,</span>
+</p>
+
+<p><span class="font15">3. Optimization approach: In order to find an appropriate matching of jobs and resources, we define an optimization problem based on the properties of the job classes and the features of the resources. The scheduler solves the following linear program (LP) for the classes in the set </span><span
+		class="font15" style="font-style:italic;">JobClasses1.</span><span class="font15"> Here </span><span class="font15"
+																																																				 style="font-style:italic;">5i,j</span><span
+		class="font15"> is defined as the proportion of resource </span><span class="font15"
+																																					style="font-style:italic;">R<sub>j</sub></span><span
+		class="font15"></sub> which is allocated to class C,, and A is the amount that we simultaneously increase arrival rates of all classes. We aim to maximize </span><span
+		class="font15" style="font-style:italic;">A</span><span class="font15">, while keeping the system stable.</span>
+</p>
+
+<div>
+	<p><span class="font12">max A</span></p>
+	<img
+			src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-15.png"
+			style="width:196pt;height:87pt;"/></div>
+<br clear="all"/>
+
+<div><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-16.jpg"
+		style="width:198pt;height:77pt;"/>
+
+	<p><span class="font15">Figure 2: The minimum share classification of the jobs in Exp1 system at time </span><span
+			class="font15" style="font-style:italic;">t</span></p>
+</div>
+<br clear="all"/>
+
+<p><span class="font15">In the above LP, M is the total number of resources in the system, and F is the total number of minimum share classes (| </span><span
+		class="font15" style="font-style:italic;">JobClasses1\).</span><span class="font15"> This optimization problem tries to minimize the maximum load over all resources. After solving this LP, we have the allocation matrix </span><span
+		class="font15" style="font-style:italic;">3{,j</span><span class="font15"> for each class </span><span
+		class="font15" style="font-style:italic;">Ci</span><span class="font15"> and each resource Rj. Based on the results of this LP, we define the set </span><span
+		class="font15" style="font-style:italic;">SCj</span><span class="font15"> for each resource </span><span
+		class="font15" style="font-style:italic;">Rj</span><span class="font15"> as follows:</span></p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-17.png"
+		style="width:160pt;height:20pt;"/></span></p>
+
+<div>
+	<p><span class="font15">at time </span><span class="font15" style="font-style:italic;">t</span><span class="font15">, is presented in Figure 3. Similar to the minimum share classification, we assume that there is just one resource in the system.</span>
+	</p>
+	<img
+			src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-18.jpg"
+			style="width:229pt;height:176pt;"/>
+
+	<p><span class="font15">Figure 3: The fairness classification of the jobs in Exp1 system at time </span><span
+			class="font15" style="font-style:italic;">t</span></p>
+</div>
+<br clear="all"/>
+
+<p><span class="font15">Note that this is the only place we use </span><span class="font15" style="font-style:italic;">di,j</span><span
+		class="font15">, where its value is just used to find the non zero amounts for defining the set SCj. For example consider a system with two classes of jobs, and two resources (M = 2, F = 2), in which the arrival and execution rates are as follows:</span>
+</p>
+<img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-19.png"
+		style="width:188pt;height:73pt;"/>
+
+<p><span class="font15">Therefore, the sets for resources </span><span class="font15"
+																																			 style="font-style:italic;">R</span><span
+		class="font15"><sub>1</sub> and </span><span class="font15" style="font-style:italic;">R</span><span class="font15"><sub>2</sub> will be SCi = {C</span><span
+		class="font11">2</span><span class="font15">} and SC</span><span class="font11">2</span><span class="font15"> = {Ci, C</span><span
+		class="font11">2</span><span class="font15">}, respectively. These two sets define the suggested classes for each resource, i.e. they suggest that upon receiving a heartbeat from resource Ri, select a job from class </span><span
+		class="font15" style="font-style:italic;">C</span><span class="font15"><sub>2</sub> . However, upon receiving a heartbeat from the resource </span><span
+		class="font15" style="font-style:italic;">R</span><span class="font10" style="font-style:italic;">2</span><span
+		class="font15" style="font-style:italic;">,</span><span
+		class="font15"> either choose a job from class Ci or C</span><span class="font11">2</span><span class="font15">. Even though resource Ri has the fastest rate for class Ci, the algorithm does not assign any jobs of class Ci to it. This occurs because, the system is highly loaded, and since &nbsp;&nbsp;&nbsp;and</span>
+</p>
+
 <p><span class="font11">° <sup>J</sup> &nbsp;&nbsp;&nbsp;’ &nbsp;&nbsp;&nbsp;M2,1 M2,2</span></p>
-<p><span class="font15">ai = a</span><span class="font11">2</span><span class="font15">, the mean completion time of the jobs is decreased if resource </span><span class="font15" style="font-style:italic;">R</span><span class="font15"><sub>i</sub> only executes class </span><span class="font15" style="font-style:italic;">C</span><span class="font11">2</span><span class="font15"> jobs.</span></p>
-<p><span class="font15">A similar optimization problem is used for the classes defined in the fairness classification. The scheduler solves the following LP for classes in the set </span><span class="font15" style="font-style:italic;">JobClasses2. </span><span class="font15">Here </span><span class="font15" style="font-style:italic;">Si j</span><span class="font15"> is defined as the proportion of resource </span><span class="font15" style="font-style:italic;">Rj</span><span class="font15"> which is allocated to class </span><span class="font15" style="font-style:italic;">Ci, </span><span class="font15">and A<sup>i</sup> is the amount that we simultaneously increase arrival rates of all classes. We aim to maximize </span><span class="font15" style="font-style:italic;">A</span><span class="font15"><sup>i</sup>, while keeping the system stable.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-20.png" style="width:196pt;height:118pt;"/></span></p>
-<p><span class="font15">As with the LP for the minimum share classification, this linear programming problem aims to find the best classes for resource allocation based on the requirements of the jobs, the arrival rates and features of the resources. We define the set </span><span class="font15" style="font-style:italic;">SCj</span><span class="font15"> for each resource </span><span class="font15" style="font-style:italic;">Rj</span><span class="font15"> as the set of classes which are allocated to this resource based on the result of this LP. Note that this is the only place we use </span><span class="font15" style="font-style:italic;">Si j</span><span class="font15">, and we are not using the actual values.</span></p>
-<p><span class="font4"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-21.png" style="width:138pt;height:19pt;"/></span></p>
-<p><span class="font15">4. </span><span class="font15" style="font-weight:bold;">Job selection: </span><span class="font15">When the scheduler receives a heartbeat from a resource, say Rj, it triggers the routing process. The first stage in the routing process is the Job Selector component. This component selects a job for each free slot in the resource Rj, and sends the selected job for each slot to the Task Scheduler component. The Task Scheduler, introduced in [2], chooses a task of the selected job to assign to the free slot.</span></p>
+
+<p><span class="font15">ai = a</span><span class="font11">2</span><span class="font15">, the mean completion time of the jobs is decreased if resource </span><span
+		class="font15" style="font-style:italic;">R</span><span class="font15"><sub>i</sub> only executes class </span><span
+		class="font15" style="font-style:italic;">C</span><span class="font11">2</span><span class="font15"> jobs.</span>
+</p>
+
+<p><span class="font15">A similar optimization problem is used for the classes defined in the fairness classification. The scheduler solves the following LP for classes in the set </span><span
+		class="font15" style="font-style:italic;">JobClasses2. </span><span class="font15">Here </span><span class="font15"
+																																																				 style="font-style:italic;">Si j</span><span
+		class="font15"> is defined as the proportion of resource </span><span class="font15"
+																																					style="font-style:italic;">Rj</span><span
+		class="font15"> which is allocated to class </span><span class="font15" style="font-style:italic;">Ci, </span><span
+		class="font15">and A<sup>i</sup> is the amount that we simultaneously increase arrival rates of all classes. We aim to maximize </span><span
+		class="font15" style="font-style:italic;">A</span><span class="font15"><sup>i</sup>, while keeping the system stable.</span>
+</p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-20.png"
+		style="width:196pt;height:118pt;"/></span></p>
+
+<p><span class="font15">As with the LP for the minimum share classification, this linear programming problem aims to find the best classes for resource allocation based on the requirements of the jobs, the arrival rates and features of the resources. We define the set </span><span
+		class="font15" style="font-style:italic;">SCj</span><span class="font15"> for each resource </span><span
+		class="font15" style="font-style:italic;">Rj</span><span class="font15"> as the set of classes which are allocated to this resource based on the result of this LP. Note that this is the only place we use </span><span
+		class="font15" style="font-style:italic;">Si j</span><span
+		class="font15">, and we are not using the actual values.</span>
+</p>
+
+<p><span class="font4"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-21.png"
+		style="width:138pt;height:19pt;"/></span></p>
+
+<p><span class="font15">4. </span><span class="font15" style="font-weight:bold;">Job selection: </span><span
+		class="font15">When the scheduler receives a heartbeat from a resource, say Rj, it triggers the routing process. The first stage in the routing process is the Job Selector component. This component selects a job for each free slot in the resource Rj, and sends the selected job for each slot to the Task Scheduler component. The Task Scheduler, introduced in [2], chooses a task of the selected job to assign to the free slot.</span>
+</p>
+
 <p><a name="bookmark12"></a><span class="font17" style="font-weight:bold;">7 Evaluation</span></p>
-<p><span class="font15">In this section we first describe our implemented evaluation environment, and later we</span></p>
+
+<p><span class="font15">In this section we first describe our implemented evaluation environment, and later we</span>
+</p>
+
 <p><span class="font15">provide our experimental results.</span></p>
+
 <p><a name="bookmark13"></a><span class="font16" style="font-weight:bold;">7.1 Experimental Environment</span></p>
-<p><span class="font15">To evaluate our proposed algorithm, we use a Hadoop simulator, MRSIM [6]. MRSIM is a MapReduce simulator based on discrete event simulation, which accurately models the Hadoop environment. The simulator on the one hand allows us to measure scalability of the MapReduce based applications easily and quickly, while capturing the effects of different configurations of Hadoop setup on performance.</span></p>
-<p><span class="font15">We extend this simulator to measure the four Hadoop performance metrics introduced in Section 5. We also add a job submission component to the simulator. Using this component we can define various users with different minimum shares, and priorities. Each user can submit various types of jobs to the system with different arrival rates. Moreover, we add a scheduler component to the simulator, which receives the incoming jobs and stores them in corresponding queues chosen by the system scheduling algorithm. Also, upon receiving a heartbeat message, it sends a task to the free slot of the resource.</span></p>
-<p><span class="font15">Our experimental environment consists of a cluster of 6 heterogeneous resources. The resources’ features are presented in Table 3. The bandwidth between the resources is 100Mbps. We define our workload using a Loadgen exam-</span></p>
+
+<p><span class="font15">To evaluate our proposed algorithm, we use a Hadoop simulator, MRSIM [6]. MRSIM is a MapReduce simulator based on discrete event simulation, which accurately models the Hadoop environment. The simulator on the one hand allows us to measure scalability of the MapReduce based applications easily and quickly, while capturing the effects of different configurations of Hadoop setup on performance.</span>
+</p>
+
+<p><span class="font15">We extend this simulator to measure the four Hadoop performance metrics introduced in Section 5. We also add a job submission component to the simulator. Using this component we can define various users with different minimum shares, and priorities. Each user can submit various types of jobs to the system with different arrival rates. Moreover, we add a scheduler component to the simulator, which receives the incoming jobs and stores them in corresponding queues chosen by the system scheduling algorithm. Also, upon receiving a heartbeat message, it sends a task to the free slot of the resource.</span>
+</p>
+
+<p><span class="font15">Our experimental environment consists of a cluster of 6 heterogeneous resources. The resources’ features are presented in Table 3. The bandwidth between the resources is 100Mbps. We define our workload using a Loadgen exam-</span>
+</p>
 <table border="1">
-<tr><td rowspan="2">
-<p><span class="font12">Resources</span></p></td><td colspan="2">
-<p><span class="font12">Slot</span></p></td><td colspan="2">
-<p><span class="font12">Mem</span></p></td></tr>
-<tr><td>
-<p><span class="font13" style="font-style:italic;">slot</span><span class="font14">#</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">execRate</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">Capacity</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">RetriveRate</span></p></td></tr>
-<tr><td>
-<p><span class="font15">R</span><span class="font11">1</span></p></td><td>
-<p></p></td><td>
-<p><span class="font11" style="font-style:italic;">55000MHz</span></p></td><td>
-<p><span class="font11" style="font-style:italic;">4GB</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">40Mbps</span></p></td></tr>
-<tr><td>
-<p><span class="font15">R2</span></p></td><td>
-<p></p></td><td>
-<p><span class="font11" style="font-style:italic;">55000MHz</span></p></td><td>
-<p><span class="font11" style="font-style:italic;">4TB</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">100Gbps</span></p></td></tr>
-<tr><td>
-<p><span class="font15">Rs</span></p></td><td>
-<p></p></td><td>
-<p><span class="font11" style="font-style:italic;">55000MHz</span></p></td><td>
-<p><span class="font11" style="font-style:italic;">4TB</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">100Gbps</span></p></td></tr>
-<tr><td>
-<p><span class="font15">R</span><span class="font11">4</span></p></td><td>
-<p><span class="font2">8</span></p></td><td>
-<p><span class="font11" style="font-style:italic;">55000MHz</span></p></td><td>
-<p><span class="font11" style="font-style:italic;">4GB</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">40Mbps</span></p></td></tr>
-<tr><td>
-<p><span class="font15">R</span><span class="font11">5</span></p></td><td>
-<p><span class="font2">8</span></p></td><td>
-<p><span class="font11" style="font-style:italic;">55000MHz</span></p></td><td>
-<p><span class="font11" style="font-style:italic;">4GB</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">40Mbps</span></p></td></tr>
-<tr><td>
-<p><span class="font15">R6</span></p></td><td>
-<p><span class="font2">8</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">4.2GHz</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">4TB</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">100Gbps</span></p></td></tr>
+	<tr>
+		<td rowspan="2">
+			<p><span class="font12">Resources</span></p>
+		</td>
+		<td colspan="2">
+			<p><span class="font12">Slot</span></p>
+		</td>
+		<td colspan="2">
+			<p><span class="font12">Mem</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font13" style="font-style:italic;">slot</span><span class="font14">#</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">execRate</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">Capacity</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">RetriveRate</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">R</span><span class="font11">1</span></p>
+		</td>
+		<td>
+			<p></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">55000MHz</span></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">4GB</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">40Mbps</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">R2</span></p>
+		</td>
+		<td>
+			<p></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">55000MHz</span></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">4TB</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">100Gbps</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">Rs</span></p>
+		</td>
+		<td>
+			<p></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">55000MHz</span></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">4TB</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">100Gbps</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">R</span><span class="font11">4</span></p>
+		</td>
+		<td>
+			<p><span class="font2">8</span></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">55000MHz</span></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">4GB</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">40Mbps</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">R</span><span class="font11">5</span></p>
+		</td>
+		<td>
+			<p><span class="font2">8</span></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">55000MHz</span></p>
+		</td>
+		<td>
+			<p><span class="font11" style="font-style:italic;">4GB</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">40Mbps</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">R6</span></p>
+		</td>
+		<td>
+			<p><span class="font2">8</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">4.2GHz</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">4TB</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">100Gbps</span></p>
+		</td>
+	</tr>
 </table>
 <p><span class="font15">Table 3: Experiment resources</span></p>
-<p><span class="font15">ple job in Hadoop that is used in Hadoop’s included Gridmix benchmark. Loadgen is a configurable job, in which choosing various percentages for keepMap and keepReduce, we can make the job equivalent to various workloads used in Gridmix, such as sort and filter.</span></p>
-<p><span class="font15">We generate four types of jobs in the system: small jobs, with small I/O and CPU requirements (they have 1 Map and 1 Reduce task), I/O-heavy jobs, with large I/O and small CPU requirements (they have 10 Map</span></p>
+
+<p><span class="font15">ple job in Hadoop that is used in Hadoop’s included Gridmix benchmark. Loadgen is a configurable job, in which choosing various percentages for keepMap and keepReduce, we can make the job equivalent to various workloads used in Gridmix, such as sort and filter.</span>
+</p>
+
+<p><span class="font15">We generate four types of jobs in the system: small jobs, with small I/O and CPU requirements (they have 1 Map and 1 Reduce task), I/O-heavy jobs, with large I/O and small CPU requirements (they have 10 Map</span>
+</p>
 <table border="1">
-<tr><td>
-<p><span class="font12">Workloads</span></p></td><td>
-<p><span class="font12">Workload Type</span></p></td><td>
-<p><span class="font12">Jobs Included</span></p></td></tr>
-<tr><td>
-<p><span class="font15">W</span><span class="font11">1</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">I / O-Intensivei</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">small, I/O-heavy</span></p></td></tr>
-<tr><td>
-<p><span class="font15">W</span><span class="font11">2</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">CPU -Intensivei</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">small, CPU -heavy</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">Ws</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">Mixedi</span></p></td><td>
-<p><span class="font13" style="font-style:italic;">All jobs</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font12">Workloads</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Workload Type</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Jobs Included</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">W</span><span class="font11">1</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">I / O-Intensivei</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">small, I/O-heavy</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">W</span><span class="font11">2</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">CPU -Intensivei</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">small, CPU -heavy</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">Ws</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">Mixedi</span></p>
+		</td>
+		<td>
+			<p><span class="font13" style="font-style:italic;">All jobs</span></p>
+		</td>
+	</tr>
 </table>
 <p><span class="font15">Table 4: Experimental workloads</span></p>
-<p><span class="font15">each workload, we define three benchmarks for each workload in Table 5. Here </span><span class="font15" style="font-style:italic;">BM<sub>i</sub>,j</span><span class="font15"> shows the benchmark </span><span class="font15" style="font-style:italic;">j</span><span class="font15"> of workload i; for instance, </span><span class="font15" style="font-style:italic;">BM<sub>1</sub>,<sub>1</span><span class="font15"></sub> is a benchmark which includes I/OIntensive jobs, where the arrival rate of smaller jobs is higher than the arrival rate of larger ones. In total, we define nine benchmarks to run in our simulated Hadoop environment. We</span></p><div>
-<p><span class="font15">Figure 4: Dissatisfaction performance metric of the algorithms in I/O-Intensive workload</span></p></div><br clear="all"/><div style="border-left:solid;"><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-22.jpg" style="width:201pt;height:124pt;"/></div><br clear="all"/><div>
-<p><span class="font15">and 1 Reduce tasks), CPU-heavy jobs, with small I/O and large CPU requirements (they have 1 Map and 10 Reduce tasks), and large jobs, which have large I/O and large CPU requirements (they have 10 Map and 10 Reduce tasks). Using these jobs, we define three workloads: an I/O-Intensive workload, in which all jobs are I/O-bound; a CPU-Intensive workload; and a mixed workload, which includes all job types. The workloads are given in Table 4. Considering various arrival rates for the jobs in</span></p></div><br clear="all"/>
+
+<p><span class="font15">each workload, we define three benchmarks for each workload in Table 5. Here </span><span
+		class="font15" style="font-style:italic;">BM<sub>i</sub>,j</span><span
+		class="font15"> shows the benchmark </span><span class="font15" style="font-style:italic;">j</span><span
+		class="font15"> of workload i; for instance, </span><span class="font15"
+																															style="font-style:italic;">BM<sub>1</sub>,<sub>1</sub></span><span
+		class="font15"></sub> is a benchmark which includes I/OIntensive jobs, where the arrival rate of smaller jobs is higher than the arrival rate of larger ones. In total, we define nine benchmarks to run in our simulated Hadoop environment. We</span>
+</p>
+
+<div>
+	<p><span
+			class="font15">Figure 4: Dissatisfaction performance metric of the algorithms in I/O-Intensive workload</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<div style="border-left:solid;"><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-22.jpg"
+		style="width:201pt;height:124pt;"/></div>
+<br clear="all"/>
+
+<div>
+	<p><span class="font15">and 1 Reduce tasks), CPU-heavy jobs, with small I/O and large CPU requirements (they have 1 Map and 10 Reduce tasks), and large jobs, which have large I/O and large CPU requirements (they have 10 Map and 10 Reduce tasks). Using these jobs, we define three workloads: an I/O-Intensive workload, in which all jobs are I/O-bound; a CPU-Intensive workload; and a mixed workload, which includes all job types. The workloads are given in Table 4. Considering various arrival rates for the jobs in</span>
+	</p>
+</div>
+<br clear="all"/>
 <table border="1">
-<tr><td>
-<p><span class="font12">Benchmarks</span></p></td><td>
-<p><span class="font12">Arrival rate Ordering</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">BMi,!</span></p></td><td>
-<p><span class="font12">Smaller jobs have higher arrival rates</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">BMi,2</span></p></td><td>
-<p><span class="font12">Arrival rates are equal for all jobs</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">BMi,s</span></p></td><td>
-<p><span class="font12">Larger jobs have higher arrival rates</span></p></td></tr>
-<tr><td>
-<p><span class="font15">Table 5:</span></p></td><td>
-<p><span class="font15">Experiment benchmarks</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font12">Benchmarks</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Arrival rate Ordering</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">BMi,!</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Smaller jobs have higher arrival rates</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">BMi,2</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Arrival rates are equal for all jobs</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">BMi,s</span></p>
+		</td>
+		<td>
+			<p><span class="font12">Larger jobs have higher arrival rates</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">Table 5:</span></p>
+		</td>
+		<td>
+			<p><span class="font15">Experiment benchmarks</span></p>
+		</td>
+	</tr>
 </table>
-<p><span class="font15">submit 100 jobs to the system, which is sufficient to contain a variety of the behaviours in a Hadoop system, and is the same number of jobs used in evaluating most Hadoop scheduling systems [9]. The Hadoop block size is set to 64MB, which is the default size in Hadoop 0.21. We generate job input data size similar to the workload used in [9] (which is driven from a real Hadoop workload), where the input data of a job is defined by the number of map tasks of the job and creating a data set with correct sizes (there is one map task per 64MB input block).</span></p>
+<p><span class="font15">submit 100 jobs to the system, which is sufficient to contain a variety of the behaviours in a Hadoop system, and is the same number of jobs used in evaluating most Hadoop scheduling systems [9]. The Hadoop block size is set to 64MB, which is the default size in Hadoop 0.21. We generate job input data size similar to the workload used in [9] (which is driven from a real Hadoop workload), where the input data of a job is defined by the number of map tasks of the job and creating a data set with correct sizes (there is one map task per 64MB input block).</span>
+</p>
+
 <p><a name="bookmark14"></a><span class="font16" style="font-weight:bold;">7.2 Results</span></p>
-<p><span class="font15">This section provides the results of our experiments. In each experiment we compare our</span></p><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-23.jpg" style="width:203pt;height:138pt;"/>
-<p><span class="font15">Figure 5: Dissatisfaction performance metric of the algorithms in CPU-Intensive workload</span></p>
-<p><span class="font15">proposed algorithm with the FIFO algorithm and the version of the Fair-sharing algorithm which is presented in [9]. The comparison is based on the four performance metrics introduced in Section 5. For each experiment, we run 30 replications in order to construct 95 percent confidence intervals.</span></p>
-<p><span class="font15">Figures 4, 5, and 6 present the Dissatisfaction metric of the algorithms running the benchmarks of the I/O-Intensive, CPUIntensive, and Mixed workloads, respectively. The lower and upper bounds of the confidence intervals are represented with lines on each bar.</span></p>
-<p><span class="font15">Based on these results, our proposed algorithm can lead to considerable improvement in the Dissatisfaction performance metric. There are a couple of reasons for this improvement. First, our proposed algorithm considers the minimum share satisfaction of the users as its initial goal. When receiving a heartbeat from a resource, it first satisfies the minimum shares of the users. Second, our algorithm considers the priority of the users in satisfying their minimum shares. Therefore, the highest priority user who has not yet received her minimum share will be considered first. However, since the algorithm considers the product of the remaining minimum share and the priority of the user, it does not let a high priority user with high minimum share starve lower priority users with smaller minimum shares. This is an important issue, which is not considered in the Fair-sharing algorithm. As for our algorithm, the Fair-sharing algorithm has the initial goal of satisfying the minimum shares of the users. However, since the Fair-sharing algorithm does not change the ordering of the users who have not received their minimum share, it causes higher Dissatisfaction in the system. The Fair-sharing algorithm defines pools of jobs, where each pool is dedicated to a user. Since the order of the pools (which present users) is fixed, the algorithm always checks the users’ minimum share satisfaction in that order. Therefore, if there is a user at the head of this ordering who has large minimum share requirement and low priority, she may create a long delay for the other users with higher priority. Moreover, the Fair-sharing algorithm does not consider the users’ priorities in the order of satisfying their minimum shares.</span></p>
-<p><span class="font15">Figures 7, 8, and 9 present the Mean Completion Time metric of the algorithms running the benchmarks of the I/O-Intensive, CPUIntensive, and Mixed workloads, respectively. The results show that compared to the other al-</span></p><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-24.jpg" style="width:210pt;height:134pt;"/>
-<p><span class="font15">Figure 8: Mean Comp. Time performance metric of the algorithms in CPU-Intensive workload</span></p>
-<p><span class="font15">gorithms, our proposed algorithm achieves the best mean completion time in all the benchmarks. Compared to the FIFO algorithm, our algorithm leads to significant improvement in reducing the mean completion time of the jobs. This significant improvement can be explained by the fact that unlike the other two algorithms, our proposed algorithm considers the heterogeneity in making a proper scheduling decision based on the job requirements and the resource features.</span></p><div><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-25.jpg" style="width:199pt;height:130pt;"/>
-<p><span class="font15">Figure 6: Dissatisfaction performance metric of the algorithms in Mixed workload</span></p></div><br clear="all"/><div><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-26.jpg" style="width:208pt;height:143pt;"/>
-<p><span class="font15">Figure 7: Mean Comp. Time performance metric of the algorithms in I/O-Intensive workload</span></p></div><br clear="all"/>
-<p><span class="font15">Table 6 presents the Fairness metric of the algorithms in the various defined benchmarks. In each benchmark, the table shows the 95%-confidence interval for Fairness when the corresponding scheduling algorithm is used. Comparing the algorithms, the Fair-sharing algorithm has the best Fairness. This is as expected, because the main goal of this algorithm is improving the Fairness metric. Our proposed</span></p><img src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-27.jpg" style="width:204pt;height:141pt;"/>
+
+<p><span class="font15">This section provides the results of our experiments. In each experiment we compare our</span>
+</p>
+<img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-23.jpg"
+		style="width:203pt;height:138pt;"/>
+
+<p><span class="font15">Figure 5: Dissatisfaction performance metric of the algorithms in CPU-Intensive workload</span>
+</p>
+
+<p><span class="font15">proposed algorithm with the FIFO algorithm and the version of the Fair-sharing algorithm which is presented in [9]. The comparison is based on the four performance metrics introduced in Section 5. For each experiment, we run 30 replications in order to construct 95 percent confidence intervals.</span>
+</p>
+
+<p><span class="font15">Figures 4, 5, and 6 present the Dissatisfaction metric of the algorithms running the benchmarks of the I/O-Intensive, CPUIntensive, and Mixed workloads, respectively. The lower and upper bounds of the confidence intervals are represented with lines on each bar.</span>
+</p>
+
+<p><span class="font15">Based on these results, our proposed algorithm can lead to considerable improvement in the Dissatisfaction performance metric. There are a couple of reasons for this improvement. First, our proposed algorithm considers the minimum share satisfaction of the users as its initial goal. When receiving a heartbeat from a resource, it first satisfies the minimum shares of the users. Second, our algorithm considers the priority of the users in satisfying their minimum shares. Therefore, the highest priority user who has not yet received her minimum share will be considered first. However, since the algorithm considers the product of the remaining minimum share and the priority of the user, it does not let a high priority user with high minimum share starve lower priority users with smaller minimum shares. This is an important issue, which is not considered in the Fair-sharing algorithm. As for our algorithm, the Fair-sharing algorithm has the initial goal of satisfying the minimum shares of the users. However, since the Fair-sharing algorithm does not change the ordering of the users who have not received their minimum share, it causes higher Dissatisfaction in the system. The Fair-sharing algorithm defines pools of jobs, where each pool is dedicated to a user. Since the order of the pools (which present users) is fixed, the algorithm always checks the users’ minimum share satisfaction in that order. Therefore, if there is a user at the head of this ordering who has large minimum share requirement and low priority, she may create a long delay for the other users with higher priority. Moreover, the Fair-sharing algorithm does not consider the users’ priorities in the order of satisfying their minimum shares.</span>
+</p>
+
+<p><span class="font15">Figures 7, 8, and 9 present the Mean Completion Time metric of the algorithms running the benchmarks of the I/O-Intensive, CPUIntensive, and Mixed workloads, respectively. The results show that compared to the other al-</span>
+</p>
+<img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-24.jpg"
+		style="width:210pt;height:134pt;"/>
+
+<p><span class="font15">Figure 8: Mean Comp. Time performance metric of the algorithms in CPU-Intensive workload</span>
+</p>
+
+<p><span class="font15">gorithms, our proposed algorithm achieves the best mean completion time in all the benchmarks. Compared to the FIFO algorithm, our algorithm leads to significant improvement in reducing the mean completion time of the jobs. This significant improvement can be explained by the fact that unlike the other two algorithms, our proposed algorithm considers the heterogeneity in making a proper scheduling decision based on the job requirements and the resource features.</span>
+</p>
+
+<div><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-25.jpg"
+		style="width:199pt;height:130pt;"/>
+
+	<p><span class="font15">Figure 6: Dissatisfaction performance metric of the algorithms in Mixed workload</span></p>
+</div>
+<br clear="all"/>
+
+<div><img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-26.jpg"
+		style="width:208pt;height:143pt;"/>
+
+	<p><span
+			class="font15">Figure 7: Mean Comp. Time performance metric of the algorithms in I/O-Intensive workload</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<p><span class="font15">Table 6 presents the Fairness metric of the algorithms in the various defined benchmarks. In each benchmark, the table shows the 95%-confidence interval for Fairness when the corresponding scheduling algorithm is used. Comparing the algorithms, the Fair-sharing algorithm has the best Fairness. This is as expected, because the main goal of this algorithm is improving the Fairness metric. Our proposed</span>
+</p>
+<img
+		src="adaptive(classisication and optimization)-scheduler_files/adaptive(classisication and optimization)-scheduler-27.jpg"
+		style="width:204pt;height:141pt;"/>
+
 <p><span class="font15">Figure 9: Mean Comp. Time performance metric of the algorithms in Mixed workload</span></p>
 <table border="1">
-<tr><td>
-<p><span class="font12">Benchmarks</span></p></td><td>
-<p><span class="font12">FIFO</span></p></td><td>
-<p><span class="font12">FAIR</span></p></td><td>
-<p><span class="font12">MyALG</span></p></td></tr>
-<tr><td>
-<p><span class="font15">BM1,1</span></p></td><td>
-<p><span class="font12">(14.88,15.05)</span></p></td><td>
-<p><span class="font12">(11.59,11.65)</span></p></td><td>
-<p><span class="font12">(14.68,16.08)</span></p></td></tr>
-<tr><td>
-<p><span class="font20" style="font-style:italic;">BM±,2</span></p></td><td>
-<p><span class="font12">(14.93,15.00)</span></p></td><td>
-<p><span class="font12">(11.57,11.72)</span></p></td><td>
-<p><span class="font12">(12.68,14.60)</span></p></td></tr>
-<tr><td>
-<p><span class="font14" style="font-style:italic;">BM\,s</span></p></td><td>
-<p><span class="font12">(14.63,15.26)</span></p></td><td>
-<p><span class="font12">(11.59,11.76)</span></p></td><td>
-<p><span class="font12">(17.23,17.65)</span></p></td></tr>
-<tr><td>
-<p><span class="font13">BM2,1</span></p></td><td>
-<p><span class="font12">(14.77,15.22)</span></p></td><td>
-<p><span class="font12">(11.63,11.98)</span></p></td><td>
-<p><span class="font12">(11.99,12.34)</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">BM2,2</span></p></td><td>
-<p><span class="font12">(14.83,15.09)</span></p></td><td>
-<p><span class="font12">(11.81,12.12)</span></p></td><td>
-<p><span class="font12">(13.99,14.36)</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">BM2,s</span></p></td><td>
-<p><span class="font12">(14.42,15.73)</span></p></td><td>
-<p><span class="font12">(11.81,11.94)</span></p></td><td>
-<p><span class="font12">(17.37,17.72)</span></p></td></tr>
-<tr><td>
-<p><span class="font15">BMs,1</span></p></td><td>
-<p><span class="font12">(14.94,15.37)</span></p></td><td>
-<p><span class="font12">(11.47,12.71)</span></p></td><td>
-<p><span class="font12">(14.11,15.05)</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">BMs,2</span></p></td><td>
-<p><span class="font12">(14.73,15.62)</span></p></td><td>
-<p><span class="font12">(11.72,12.46)</span></p></td><td>
-<p><span class="font12">(14.41,14.98)</span></p></td></tr>
-<tr><td>
-<p><span class="font20" style="font-style:italic;">BMs,s</span></p></td><td>
-<p><span class="font12">(15.00,15.44)</span></p></td><td>
-<p><span class="font12">(11.89,12.07)</span></p></td><td>
-<p><span class="font12">(12.11,13.31)</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font12">Benchmarks</span></p>
+		</td>
+		<td>
+			<p><span class="font12">FIFO</span></p>
+		</td>
+		<td>
+			<p><span class="font12">FAIR</span></p>
+		</td>
+		<td>
+			<p><span class="font12">MyALG</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">BM1,1</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.88,15.05)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.59,11.65)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.68,16.08)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font20" style="font-style:italic;">BM±,2</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.93,15.00)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.57,11.72)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(12.68,14.60)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font14" style="font-style:italic;">BM\,s</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.63,15.26)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.59,11.76)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(17.23,17.65)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font13">BM2,1</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.77,15.22)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.63,11.98)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.99,12.34)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">BM2,2</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.83,15.09)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.81,12.12)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(13.99,14.36)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">BM2,s</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.42,15.73)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.81,11.94)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(17.37,17.72)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">BMs,1</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.94,15.37)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.47,12.71)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.11,15.05)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">BMs,2</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.73,15.62)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.72,12.46)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(14.41,14.98)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font20" style="font-style:italic;">BMs,s</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(15.00,15.44)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(11.89,12.07)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(12.11,13.31)</span></p>
+		</td>
+	</tr>
 </table>
 <p><span class="font15">Table 6: Fairness performance metric of the algorithms for all workloads</span></p>
-<p><span class="font15">algorithm considers the heterogeneity and assigns the jobs based on the features of the resources. Therefore, it does not blindly assign each job to each free resource. Moreover, our algorithm first satisfies the minimum share of the users. Then, after receiving the minimum share, the corresponding user will be considered along with all other users (second level of classification of our algorithm) to achieve fairness in dividing the shares of the resources among the users in the system. In some benchmarks, our algorithm leads to an increase in the Fairness metric. However, because of the importance of the users with non zero minimum shares, this side effect may be considered acceptable. Generally, the minimum share of the users are assigned based on business rules, which has higher priority for most companies. As a result, a small increase in Fairness may be considered acceptable for most Hadoop systems, if it results in better satisfaction of the users’ minimum shares, and significant reduction in the mean completion time of the jobs.</span></p>
+
+<p><span class="font15">algorithm considers the heterogeneity and assigns the jobs based on the features of the resources. Therefore, it does not blindly assign each job to each free resource. Moreover, our algorithm first satisfies the minimum share of the users. Then, after receiving the minimum share, the corresponding user will be considered along with all other users (second level of classification of our algorithm) to achieve fairness in dividing the shares of the resources among the users in the system. In some benchmarks, our algorithm leads to an increase in the Fairness metric. However, because of the importance of the users with non zero minimum shares, this side effect may be considered acceptable. Generally, the minimum share of the users are assigned based on business rules, which has higher priority for most companies. As a result, a small increase in Fairness may be considered acceptable for most Hadoop systems, if it results in better satisfaction of the users’ minimum shares, and significant reduction in the mean completion time of the jobs.</span>
+</p>
 <table border="1">
-<tr><td>
-<p><span class="font12">Benchmarks</span></p></td><td>
-<p><span class="font12">FIFO</span></p></td><td>
-<p><span class="font12">FAIR</span></p></td><td>
-<p><span class="font12">MyALG</span></p></td></tr>
-<tr><td>
-<p><span class="font15">BM1,1</span></p></td><td>
-<p><span class="font12">(96.60, 98.03)</span></p></td><td>
-<p><span class="font12">(98.12, 99.08)</span></p></td><td>
-<p><span class="font12">(98.62, 99.98)</span></p></td></tr>
-<tr><td>
-<p><span class="font15">BM1,2</span></p></td><td>
-<p><span class="font12">(47.39, 57.81)</span></p></td><td>
-<p><span class="font12">(89.84, 91.76)</span></p></td><td>
-<p><span class="font12">(93.82, 95.38)</span></p></td></tr>
-<tr><td>
-<p><span class="font15">BM1,3</span></p></td><td>
-<p><span class="font12">(62.93, 65.07)</span></p></td><td>
-<p><span class="font12">(71.43, 74.57)</span></p></td><td>
-<p><span class="font12">(66.44, 71.55)</span></p></td></tr>
-<tr><td>
-<p><span class="font20" style="font-style:italic;">BM2,1</span></p></td><td>
-<p><span class="font12">(90.38, 94.42)</span></p></td><td>
-<p><span class="font12">(97.12, 98.08)</span></p></td><td>
-<p><span class="font12">(98.56, 99.87)</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">BM2,2</span></p></td><td>
-<p><span class="font12">(68.65, 82.15)</span></p></td><td>
-<p><span class="font12">(93.93, 96.87)</span></p></td><td>
-<p><span class="font12">(91.78, 95.42)</span></p></td></tr>
-<tr><td>
-<p><span class="font20" style="font-style:italic;">BM23</span></p></td><td>
-<p><span class="font12">(78.73, 84.07)</span></p></td><td>
-<p><span class="font12">(94.14, 97.86)</span></p></td><td>
-<p><span class="font12">(93.78, 97.42)</span></p></td></tr>
-<tr><td>
-<p><span class="font20" style="font-style:italic;">BMs,1</span></p></td><td>
-<p><span class="font12">(73.48, 86.92)</span></p></td><td>
-<p><span class="font12">(78.77, 83.63)</span></p></td><td>
-<p><span class="font12">(99.12,100.00)</span></p></td></tr>
-<tr><td>
-<p><span class="font15" style="font-style:italic;">BMs,2</span></p></td><td>
-<p><span class="font12">(92.36, 95.24)</span></p></td><td>
-<p><span class="font12">(81.27, 87.13)</span></p></td><td>
-<p><span class="font12">(95.11, 99.69)</span></p></td></tr>
-<tr><td>
-<p><span class="font20" style="font-style:italic;">BMs,s</span></p></td><td>
-<p><span class="font12">(79.23, 88.37)</span></p></td><td>
-<p><span class="font12">(78.02, 86.37)</span></p></td><td>
-<p><span class="font12">(66.86, 76.73)</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font12">Benchmarks</span></p>
+		</td>
+		<td>
+			<p><span class="font12">FIFO</span></p>
+		</td>
+		<td>
+			<p><span class="font12">FAIR</span></p>
+		</td>
+		<td>
+			<p><span class="font12">MyALG</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">BM1,1</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(96.60, 98.03)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(98.12, 99.08)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(98.62, 99.98)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">BM1,2</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(47.39, 57.81)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(89.84, 91.76)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(93.82, 95.38)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15">BM1,3</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(62.93, 65.07)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(71.43, 74.57)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(66.44, 71.55)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font20" style="font-style:italic;">BM2,1</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(90.38, 94.42)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(97.12, 98.08)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(98.56, 99.87)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">BM2,2</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(68.65, 82.15)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(93.93, 96.87)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(91.78, 95.42)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font20" style="font-style:italic;">BM23</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(78.73, 84.07)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(94.14, 97.86)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(93.78, 97.42)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font20" style="font-style:italic;">BMs,1</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(73.48, 86.92)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(78.77, 83.63)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(99.12,100.00)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font15" style="font-style:italic;">BMs,2</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(92.36, 95.24)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(81.27, 87.13)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(95.11, 99.69)</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font20" style="font-style:italic;">BMs,s</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(79.23, 88.37)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(78.02, 86.37)</span></p>
+		</td>
+		<td>
+			<p><span class="font12">(66.86, 76.73)</span></p>
+		</td>
+	</tr>
 </table>
 <p><span class="font15">Table 7: Locality performance metric of the algorithms for all workloads</span></p>
-<p><span class="font15">Table 7 presents the Locality metric of the algorithms in the various defined benchmarks. For each benchmark, the table shows the 95%-confidence interval for Locality when the corresponding scheduling algorithm is used. The locality of our proposed algorithm is close to, and in some cases is better than the Fair-sharing algorithm. This can be explained by the fact that our algorithm chooses the replication places based on the suggested classes for each resource.</span></p>
-<p><span class="font15">Another significant feature of our proposed algorithm is that although it uses sophisticated approaches to solve the scheduling problem, it does not add considerable overhead. The reason is that first, we limit the number of times required to do classification, by considering the aggregate of job features (i.e. mean execution time and arrival rate). This results in considering the group of job types in each class, rather than just one job type. Also, since some jobs in the Hadoop system are submitted multiple times by users, these jobs do not require changing the classification each time that they are submitted to the system.</span></p>
+
+<p><span class="font15">Table 7 presents the Locality metric of the algorithms in the various defined benchmarks. For each benchmark, the table shows the 95%-confidence interval for Locality when the corresponding scheduling algorithm is used. The locality of our proposed algorithm is close to, and in some cases is better than the Fair-sharing algorithm. This can be explained by the fact that our algorithm chooses the replication places based on the suggested classes for each resource.</span>
+</p>
+
+<p><span class="font15">Another significant feature of our proposed algorithm is that although it uses sophisticated approaches to solve the scheduling problem, it does not add considerable overhead. The reason is that first, we limit the number of times required to do classification, by considering the aggregate of job features (i.e. mean execution time and arrival rate). This results in considering the group of job types in each class, rather than just one job type. Also, since some jobs in the Hadoop system are submitted multiple times by users, these jobs do not require changing the classification each time that they are submitted to the system.</span>
+</p>
+
 <p><a name="bookmark15"></a><span class="font17" style="font-weight:bold;">8 Conclusion and Future Work</span></p>
-<p><span class="font15">The primary Hadoop scheduling algorithms do not consider the heterogeneity of the Hadoop system in making scheduling decisions. In order to keep the algorithm simple they used minimal system information in making scheduling decisions, which in some cases could result in poor performance. Growing interest in applying the MapReduce programming model in var</span><span class="font4">ious applications gives rise to grather heterogeneity, and thus must be considered in its impact on performance. It has been shown that it is possible to estimate system parameters in a Hadoop system. Using the system information, we designed a scheduling algorithm which classifies the jobs based on their requirements and finds an appropriate matching of resources and jobs in the system. Our algorithm is completely adaptable to any variation in the system parameters. The classification part detects changes and adapts the classes based on the new system parameters. Also, the mean job execution times are estimated when a new job is submitted to the system, which makes the scheduler adaptable to changes in job execution times. We have received permission to use the workload from a high profile company, and we are currently working on defining benchmarks based on this workload, and use them to evaluate our algorithm. Finally, we aim to implement and evaluate our algorithm in a real Hadoop cluster.</span></p>
+
+<p><span class="font15">The primary Hadoop scheduling algorithms do not consider the heterogeneity of the Hadoop system in making scheduling decisions. In order to keep the algorithm simple they used minimal system information in making scheduling decisions, which in some cases could result in poor performance. Growing interest in applying the MapReduce programming model in var</span><span
+		class="font4">ious applications gives rise to grather heterogeneity, and thus must be considered in its impact on performance. It has been shown that it is possible to estimate system parameters in a Hadoop system. Using the system information, we designed a scheduling algorithm which classifies the jobs based on their requirements and finds an appropriate matching of resources and jobs in the system. Our algorithm is completely adaptable to any variation in the system parameters. The classification part detects changes and adapts the classes based on the new system parameters. Also, the mean job execution times are estimated when a new job is submitted to the system, which makes the scheduler adaptable to changes in job execution times. We have received permission to use the workload from a high profile company, and we are currently working on defining benchmarks based on this workload, and use them to evaluate our algorithm. Finally, we aim to implement and evaluate our algorithm in a real Hadoop cluster.</span>
+</p>
+
 <p><a name="bookmark16"></a><span class="font7" style="font-weight:bold;">ACKNOWLEDGEMENTS</span></p>
-<p><span class="font4">This work was supported by the Natural Sciences and Engineering Research Council of Canada. A major part of this work was done while both authors were visiting UC-Berkeley. In particular, the first author would like to thank Ion Stoica and Sameer Agarwal for sharing the Task Scheduler part, and also their comments on our proposed algorithm.</span></p>
+
+<p><span class="font4">This work was supported by the Natural Sciences and Engineering Research Council of Canada. A major part of this work was done while both authors were visiting UC-Berkeley. In particular, the first author would like to thank Ion Stoica and Sameer Agarwal for sharing the Task Scheduler part, and also their comments on our proposed algorithm.</span>
+</p>
+
 <p><a name="bookmark17"></a><span class="font7" style="font-weight:bold;">References</span></p>
-<p><span class="font4">[1] &nbsp;&nbsp;&nbsp;A. Aboulnaga, Z. Wang, and Z. Y. Zhang. Packing the most onto your Cloud. In </span><span class="font4" style="font-style:italic;">Proceedings of the first international workshop on Cloud data management,</span><span class="font4"> 2009.</span></p>
-<p><span class="font4">[2] &nbsp;&nbsp;&nbsp;S. Agarwal and G. Ananthanarayanan. Think global, act local: analyzing the trade-off between queue delays and locality in MapReduce jobs. Technical report, EECS Department, University of California, Berkeley, 2010.</span></p>
-<p><span class="font4">[3] &nbsp;&nbsp;&nbsp;Apache. Hadoop on demand documentation, 2007. [Online; accessed 30-November-2010].</span></p>
-<p><span class="font4">[4] &nbsp;&nbsp;&nbsp;R. Bodkin. &nbsp;&nbsp;&nbsp;Yahoo! &nbsp;&nbsp;&nbsp;updates from Hadoop Summit 2010. <a href="http://www.infoq.com/news/2010/07/yahoo-">http://www.infoq.com/news/2010/07/yahoo-</a>hadoop-summit, July 2010.</span></p>
-<p><span class="font4">[5] &nbsp;&nbsp;&nbsp;J. Dean and S. Ghemawat. MapRe-duce: simplified data processing on large clusters. </span><span class="font4" style="font-style:italic;">Communications of the ACM, </span><span class="font4">51:107-113, January 2008.</span></p>
-<p><span class="font4">[6] &nbsp;&nbsp;&nbsp;S. Hammoud, M. Li, Y. Liu, N. K. Alham, and Z. Liu. MRSim: a discrete event based MapReduce simulator. In </span><span class="font4" style="font-style:italic;">Proceedings of the 7th international conference on Fuzzy Systems and Knowledge Discovery (FSKD 2010),</span><span class="font4"> pages 2993-2997. IEEE, 2010.</span></p>
-<p><span class="font4">[7] &nbsp;&nbsp;&nbsp;Kristi Morton, Magdalena Balazinska, and Dan Grossman. ParaTimer: a progress indicator for MapReduce DAGs. In </span><span class="font4" style="font-style:italic;">Proceeding of the international conference on management of data,</span><span class="font4"> pages 507-518, 2010.</span></p>
-<p><span class="font4">[8] &nbsp;&nbsp;&nbsp;T. Sandholm and K. Lai. Dynamic proportional share scheduling in Hadoop. In </span><span class="font4" style="font-style:italic;">Proceedings of the 15th workshop on job scheduling strategies for parallel processing</span><span class="font4">, pages 110-131. Springer, Heidelberg, 2010.</span></p>
+
+<p><span class="font4">[1] &nbsp;&nbsp;&nbsp;A. Aboulnaga, Z. Wang, and Z. Y. Zhang. Packing the most onto your Cloud. In </span><span
+		class="font4"
+		style="font-style:italic;">Proceedings of the first international workshop on Cloud data management,</span><span
+		class="font4"> 2009.</span></p>
+
+<p><span class="font4">[2] &nbsp;&nbsp;&nbsp;S. Agarwal and G. Ananthanarayanan. Think global, act local: analyzing the trade-off between queue delays and locality in MapReduce jobs. Technical report, EECS Department, University of California, Berkeley, 2010.</span>
+</p>
+
+<p><span class="font4">[3] &nbsp;&nbsp;&nbsp;Apache. Hadoop on demand documentation, 2007. [Online; accessed 30-November-2010].</span>
+</p>
+
+<p><span class="font4">[4] &nbsp;&nbsp;&nbsp;R. Bodkin. &nbsp;&nbsp;&nbsp;Yahoo! &nbsp;&nbsp;&nbsp;updates from Hadoop Summit 2010. <a
+		href="http://www.infoq.com/news/2010/07/yahoo-">http://www.infoq.com/news/2010/07/yahoo-</a>hadoop-summit, July 2010.</span>
+</p>
+
+<p><span class="font4">[5] &nbsp;&nbsp;&nbsp;J. Dean and S. Ghemawat. MapRe-duce: simplified data processing on large clusters. </span><span
+		class="font4" style="font-style:italic;">Communications of the ACM, </span><span class="font4">51:107-113, January 2008.</span>
+</p>
+
+<p><span class="font4">[6] &nbsp;&nbsp;&nbsp;S. Hammoud, M. Li, Y. Liu, N. K. Alham, and Z. Liu. MRSim: a discrete event based MapReduce simulator. In </span><span
+		class="font4" style="font-style:italic;">Proceedings of the 7th international conference on Fuzzy Systems and Knowledge Discovery (FSKD 2010),</span><span
+		class="font4"> pages 2993-2997. IEEE, 2010.</span></p>
+
+<p><span class="font4">[7] &nbsp;&nbsp;&nbsp;Kristi Morton, Magdalena Balazinska, and Dan Grossman. ParaTimer: a progress indicator for MapReduce DAGs. In </span><span
+		class="font4"
+		style="font-style:italic;">Proceeding of the international conference on management of data,</span><span
+		class="font4"> pages 507-518, 2010.</span></p>
+
+<p><span
+		class="font4">[8] &nbsp;&nbsp;&nbsp;T. Sandholm and K. Lai. Dynamic proportional share scheduling in Hadoop. In </span><span
+		class="font4" style="font-style:italic;">Proceedings of the 15th workshop on job scheduling strategies for parallel processing</span><span
+		class="font4">, pages 110-131. Springer, Heidelberg, 2010.</span></p>
+
 <p><span class="font4">[9] &nbsp;&nbsp;&nbsp;M. Zaharia, D. Borthakur, J. S. Sarma,</span></p>
+
 <p><span class="font4">K. Elmeleegy, S. Shenker, and I. Stoica.</span></p>
-<p><span class="font4">Job scheduling for multi-user MapReduce clusters. Technical Report UCB/EECS-2009-55, EECS Department, University of California, Berkeley, April 2009.</span></p>
+
+<p><span class="font4">Job scheduling for multi-user MapReduce clusters. Technical Report UCB/EECS-2009-55, EECS Department, University of California, Berkeley, April 2009.</span>
+</p>
+
 <p><span class="font4">[10] M. Zaharia, D. Borthakur, J. S. Sarma,</span></p>
-<p><span class="font4">K. Elmeleey, S. Shenker, and I. Stoica. Delay scheduling: a simple technique for achieving locality and fairness in cluster scheduling. In </span><span class="font4" style="font-style:italic;">Proceeding of the European conference on computer systems (Eu-roSys),</span><span class="font4"> Paris, France, 2010.</span></p>
+
+<p><span class="font4">K. Elmeleey, S. Shenker, and I. Stoica. Delay scheduling: a simple technique for achieving locality and fairness in cluster scheduling. In </span><span
+		class="font4"
+		style="font-style:italic;">Proceeding of the European conference on computer systems (Eu-roSys),</span><span
+		class="font4"> Paris, France, 2010.</span></p>
 </body>
 </html>

@@ -1,18 +1,66 @@
-﻿ table.main {}
- tr.row {}
- td.cell {}
- div.block {}
- div.paragraph {}
- .font0 { font:11pt AngsanaUPC, serif; }
- .font1 { font:13pt AngsanaUPC, serif; }
- .font2 { font:15pt AngsanaUPC, serif; }
- .font3 { font:18pt AngsanaUPC, serif; }
- .font4 { font:8pt Century Schoolbook, serif; }
- .font5 { font:8pt Constantia; }
- .font6 { font:8pt Georgia, serif; }
- .font7 { font:10pt Tahoma, sans-serif; }
- .font8 { font:11pt Tahoma, sans-serif; }
- .font9 { font:16pt Tahoma, sans-serif; }
- .font10 { font:8pt Times New Roman, serif; }
- .font11 { font:10pt Times New Roman, serif; }
- .font12 { font:12pt Times New Roman, serif; }
+﻿table.main {
+}
+
+tr.row {
+}
+
+td.cell {
+}
+
+div.block {
+}
+
+div.paragraph {
+}
+
+.font0 {
+    font: 11pt AngsanaUPC, serif;
+}
+
+.font1 {
+    font: 13pt AngsanaUPC, serif;
+}
+
+.font2 {
+    font: 15pt AngsanaUPC, serif;
+}
+
+.font3 {
+    font: 18pt AngsanaUPC, serif;
+}
+
+.font4 {
+    font: 8pt Century Schoolbook, serif;
+}
+
+.font5 {
+    font: 8pt Constantia;
+}
+
+.font6 {
+    font: 8pt Georgia, serif;
+}
+
+.font7 {
+    font: 10pt Tahoma, sans-serif;
+}
+
+.font8 {
+    font: 11pt Tahoma, sans-serif;
+}
+
+.font9 {
+    font: 16pt Tahoma, sans-serif;
+}
+
+.font10 {
+    font: 8pt Times New Roman, serif;
+}
+
+.font11 {
+    font: 10pt Times New Roman, serif;
+}
+
+.font12 {
+    font: 12pt Times New Roman, serif;
+}

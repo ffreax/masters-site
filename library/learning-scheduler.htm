@@ -1,270 +1,877 @@
 ﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
-	"http://www.w3.org/TR/html4/loose.dtd">
+		"http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<head><meta http-equiv="content-type" content="text/html; charset=UTF-8"/><meta name="generator" content="ABBYY FineReader 11"/><link rel="stylesheet" href="learning-scheduler_files/learning-scheduler.css" type="text/css"/>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+	<meta name="generator" content="ABBYY FineReader 11"/>
+	<link rel="stylesheet" href="learning-scheduler_files/learning-scheduler.css" type="text/css"/>
 </head>
 <body>
-<p><a name="bookmark0"></a><span class="font9" style="font-weight:bold;">Using Pattern Classification for Task Assignment in MapReduce</span></p>
-<p><span class="font8">Jaideep Dhok and Vasudeva Varma </span><span class="font6">Search and Information Extraction Lab International Institute of Information Technology, Hyderabad, India</span></p>
+<p><a name="bookmark0"></a><span class="font9" style="font-weight:bold;">Using Pattern Classification for Task Assignment in MapReduce</span>
+</p>
+
+<p><span class="font8">Jaideep Dhok and Vasudeva Varma </span><span class="font6">Search and Information Extraction Lab International Institute of Information Technology, Hyderabad, India</span>
+</p>
+
 <p><span class="font1">{jaideep@research.,vv@}iiit.ac.in</span></p>
-<p><span class="font6" style="font-weight:bold;font-style:italic;">Abstract</span><span class="font6" style="font-weight:bold;">—MapReduce has become a popular paradigm for large scale data processing in the cloud. The sheer scale of MapReduce deployments make task assignment in MapReduce an interesting problem. The scale of MapReduce applications presents unique opportunity to use data driven algorithms in resource management. We present a learning based scheduler that uses pattern classification for utilization oriented task assignment in MapReduce. We also present the application of our algorithm to the Hadoop platform. The scheduler assigns tasks by classifying them in two classes, good and </span><span class="font6" style="font-weight:bold;font-style:italic;">bad.</span><span class="font6" style="font-weight:bold;"> From the tasks labeled as good it selects a task that is least likely to overload a worker node. We allow users to plug in their own policy schemes for prioritizing jobs. The scheduler learns the impact of different applications on utilization rather quickly and achieves a user specified level of utilization. Our results show that our scheduler reduces response times of jobs in certain cases by a factor of two.</span></p>
-<p><span class="font6" style="font-weight:bold;">Keywords. </span><span class="font6">Resource Management, Task Assignment, MapRe-duce, Cloud Computing.</span></p>
+
+<p><span class="font6" style="font-weight:bold;font-style:italic;">Abstract</span><span class="font6"
+																																												style="font-weight:bold;">—MapReduce has become a popular paradigm for large scale data processing in the cloud. The sheer scale of MapReduce deployments make task assignment in MapReduce an interesting problem. The scale of MapReduce applications presents unique opportunity to use data driven algorithms in resource management. We present a learning based scheduler that uses pattern classification for utilization oriented task assignment in MapReduce. We also present the application of our algorithm to the Hadoop platform. The scheduler assigns tasks by classifying them in two classes, good and </span><span
+		class="font6" style="font-weight:bold;font-style:italic;">bad.</span><span class="font6" style="font-weight:bold;"> From the tasks labeled as good it selects a task that is least likely to overload a worker node. We allow users to plug in their own policy schemes for prioritizing jobs. The scheduler learns the impact of different applications on utilization rather quickly and achieves a user specified level of utilization. Our results show that our scheduler reduces response times of jobs in certain cases by a factor of two.</span>
+</p>
+
+<p><span class="font6" style="font-weight:bold;">Keywords. </span><span class="font6">Resource Management, Task Assignment, MapRe-duce, Cloud Computing.</span>
+</p>
+
 <p><span class="font6" style="font-variant:small-caps;">I. Introduction</span></p>
-<p><span class="font6">Since its introduction, MapReduce <a href="#bookmark1">[12]</a> has emerged as a popular paradigm for building large scale distributed data processing applications. It has been especially popular in large internet companies where vast amounts of data are generated every day by users in the form of session details, click stream data and application logs. A large number of organizations across the world use Apache Hadoop <a href="#bookmark2">[2]</a>, <a href="#bookmark3">[7]</a> which is an open source implementation of the MapReduce model. For example, Yahoo!, uses a Hadoop cluster of over 4,000 nodes, having 30,000 CPU cores, and 17 petabytes of disk space <a href="#bookmark4">[8]</a>. Hadoop usage in Cloud Computing environments has been steadily increasing with new services such as Amazon Elastic MapReduce <a href="#bookmark5">[1]</a> that offer the Hadoop platform as an on demand service to users. Hadoop's popularity in the Cloud Computing space is also demonstrated by the fact that Linux distributions optimized specifically for using Hadoop in the cloud are available<a href="#bookmark6">[4]</a>.</span></p>
-<p><span class="font6">Task assignment in in Hadoop is an interesting problem, because efficient task assignment can significantly reduce runtime, or improve hardware utilization. Both of the improvements can result in reducing costs. Recent works on resource management in Hadoop <a href="#bookmark7">[22]</a> have focused on improving performance of Hadoop with respect to the user of the application. These schedulers implement different policies, and focus on fair division of resources among users of a Hadoop cluster. However they do not address the inflexibility inherent in Hadoop's task assignment, which can result into overloading or underutilization of resources.</span></p>
-<p><span class="font6">Hadoop is typically used in batch processing large amounts of data. Many organizations schedule periodic Hadoop jobs to preprocess raw information in the form of application logs, session details, and user activity in order to extract meaningful information from them. The repetitive nature of these applications provides an interesting opportunity to use performance data from past runs of the application and integrate that data into resource management algorithms.</span></p>
-<p><span class="font6">In this paper, we present a scheduler for Hadoop that is able to maintain user specified level of utilization when presented with a workload of applications with diverse requirements. Thus, it allows a user to focus on high level objectives such as maintaining a desired level of utilization. It learns the impact of different applications on system utilization rather quickly without having to use detailed information about the properties of applications themselves. The algorithm also allows the service provider in enforcing various policies such as fairness, deadline or budget based allocations. Users can plug in their own policies in order to prioritize jobs. Finally, our scheduler is able to reduce response time of some MapReduce workloads by considerable amount as compared to the native Hadoop scheduler.</span></p>
-<p><span class="font6">Our scheduler uses automatically supervised pattern classifiers for learning the impact of different MapReduce applications on system utilization. We use a classifier in predicting the outcome of queued tasks on node utilization. The classifier makes use of dynamic and static properties of the computational resources and labels each of the candidate tasks as good or a </span><span class="font5" style="font-style:italic;">bad.</span><span class="font6"> We then pick the tasks associated with maximum utility from the tasks that have been labeled </span><span class="font5" style="font-style:italic;">good</span><span class="font6"> by the classifier. Utility of the tasks is provided by an user specified utility function. We record every decision thus made by the scheduler. A supervision engine judges the decisions made by the scheduler in retrospect, and validates the decisions after observing their effects on the state of computational resources in the cluster. The validated decisions are used in updating the classifier so that experience gained from decisions validated so far can be used while making future task assignments.</span></p>
-<p><span class="font6">We begin in Section<a href="#bookmark8"> II </a>by comparing our work with related research done on resource management in MapReduce and other learning based approaches. We then briefly describe the <a name="bookmark8"></a></span><span class="font7">scheduling in Hadoop in Section<a href="#bookmark9"> III.</a> In Section<a href="#bookmark10"> IV </a>we proceed and explain our algorithm in detail as well as the feature variables used and the role of utility functions. We present the implementation details, evaluation methodology and finally report our results in Section<a href="#bookmark11"> V.</a> We conclude our paper by mentioning interesting key future directions in Section<a href="#bookmark12"> VI.</a></span></p>
+
+<p><span class="font6">Since its introduction, MapReduce <a href="#bookmark1">[12]</a> has emerged as a popular paradigm for building large scale distributed data processing applications. It has been especially popular in large internet companies where vast amounts of data are generated every day by users in the form of session details, click stream data and application logs. A large number of organizations across the world use Apache Hadoop <a
+		href="#bookmark2">[2]</a>, <a href="#bookmark3">[7]</a> which is an open source implementation of the MapReduce model. For example, Yahoo!, uses a Hadoop cluster of over 4,000 nodes, having 30,000 CPU cores, and 17 petabytes of disk space <a
+		href="#bookmark4">[8]</a>. Hadoop usage in Cloud Computing environments has been steadily increasing with new services such as Amazon Elastic MapReduce <a
+		href="#bookmark5">[1]</a> that offer the Hadoop platform as an on demand service to users. Hadoop's popularity in the Cloud Computing space is also demonstrated by the fact that Linux distributions optimized specifically for using Hadoop in the cloud are available<a
+		href="#bookmark6">[4]</a>.</span></p>
+
+<p><span class="font6">Task assignment in in Hadoop is an interesting problem, because efficient task assignment can significantly reduce runtime, or improve hardware utilization. Both of the improvements can result in reducing costs. Recent works on resource management in Hadoop <a
+		href="#bookmark7">[22]</a> have focused on improving performance of Hadoop with respect to the user of the application. These schedulers implement different policies, and focus on fair division of resources among users of a Hadoop cluster. However they do not address the inflexibility inherent in Hadoop's task assignment, which can result into overloading or underutilization of resources.</span>
+</p>
+
+<p><span class="font6">Hadoop is typically used in batch processing large amounts of data. Many organizations schedule periodic Hadoop jobs to preprocess raw information in the form of application logs, session details, and user activity in order to extract meaningful information from them. The repetitive nature of these applications provides an interesting opportunity to use performance data from past runs of the application and integrate that data into resource management algorithms.</span>
+</p>
+
+<p><span class="font6">In this paper, we present a scheduler for Hadoop that is able to maintain user specified level of utilization when presented with a workload of applications with diverse requirements. Thus, it allows a user to focus on high level objectives such as maintaining a desired level of utilization. It learns the impact of different applications on system utilization rather quickly without having to use detailed information about the properties of applications themselves. The algorithm also allows the service provider in enforcing various policies such as fairness, deadline or budget based allocations. Users can plug in their own policies in order to prioritize jobs. Finally, our scheduler is able to reduce response time of some MapReduce workloads by considerable amount as compared to the native Hadoop scheduler.</span>
+</p>
+
+<p><span class="font6">Our scheduler uses automatically supervised pattern classifiers for learning the impact of different MapReduce applications on system utilization. We use a classifier in predicting the outcome of queued tasks on node utilization. The classifier makes use of dynamic and static properties of the computational resources and labels each of the candidate tasks as good or a </span><span
+		class="font5" style="font-style:italic;">bad.</span><span class="font6"> We then pick the tasks associated with maximum utility from the tasks that have been labeled </span><span
+		class="font5" style="font-style:italic;">good</span><span class="font6"> by the classifier. Utility of the tasks is provided by an user specified utility function. We record every decision thus made by the scheduler. A supervision engine judges the decisions made by the scheduler in retrospect, and validates the decisions after observing their effects on the state of computational resources in the cluster. The validated decisions are used in updating the classifier so that experience gained from decisions validated so far can be used while making future task assignments.</span>
+</p>
+
+<p><span class="font6">We begin in Section<a href="#bookmark8"> II </a>by comparing our work with related research done on resource management in MapReduce and other learning based approaches. We then briefly describe the <a
+		name="bookmark8"></a></span><span class="font7">scheduling in Hadoop in Section<a href="#bookmark9"> III.</a> In Section<a
+		href="#bookmark10"> IV </a>we proceed and explain our algorithm in detail as well as the feature variables used and the role of utility functions. We present the implementation details, evaluation methodology and finally report our results in Section<a
+		href="#bookmark11"> V.</a> We conclude our paper by mentioning interesting key future directions in Section<a
+		href="#bookmark12"> VI.</a></span></p>
+
 <p><span class="font7">II. </span><span class="font6" style="font-variant:small-caps;">Related Work</span></p>
-<p><span class="font7">The initial work presenting MapReduce <a href="#bookmark1">[12]</a> only briefly discusses resource management. Much of Hadoop's architecture<a href="#bookmark2">[2]</a> is inspired by their work. They also mention that data local execution and speculative execution, i.e. reexecution of 'slow' tasks results in up to 40% improvement in response times. Their work, however does not discuss approaches to improve utilization on a cluster, other than to divide a job into large number of subtasks for better failure recovery and more granular scheduling.</span></p>
-<p><span class="font7">The LATE scheduler <a href="#bookmark7">[22]</a> tries to improve response time of Hadoop in multiuser environments by improving speculative execution. It relaunches tasks expected to “finish farthest into the future”. To better accommodate different types of tasks, task progress is divided into zones. A user defined limit is used to control the number of speculative tasks assigned to one node. The LATE scheduler achieves better response times especially in heterogeneous cloud environments. We would like to point out that speculative execution tries to improve performance by </span><span class="font7" style="font-style:italic;">curing</span><span class="font7"> node overload, whereas our algorithm tries to </span><span class="font7" style="font-style:italic;">prevent</span><span class="font7"> overload altogether by selectively assigning only those tasks which are unlikely to overload a given node.</span></p>
-<p><span class="font7">The FAIR scheduler <a href="#bookmark13">[23]</a>, Capacity scheduler<a href="#bookmark14">[3]</a>, and the Dynamic Priority scheduler<a href="#bookmark15">[5]</a>, try to achieve fairness, guaranteed capacity and adjustable priority based scheduling respectively. Hadoop on Demand<a href="#bookmark16">[6]</a> tries to use existing cluster managers for resource management in Hadoop. It should be noted that these schedulers concentrate either on policy enforcement (fairness, for example) or on improving response time of jobs from the perspective of the users. Our work differs from these approaches in that, we allow a service provider to plug in his/her own policy scheme, while maintaining a specified level of utilization. Also, as discussed further in section<a href="#bookmark9"> III,</a> all of these schedulers allocate tasks only if there are fewer than maximum allowed tasks (a limit set by the administrator) running on a worker machine. Our scheduler, on the other hand assigns tasks as long as any additional task is likely to overload a worker machine.</span></p>
-<p><span class="font7">Stochastic Learning Automata have been used in load balancing <a href="#bookmark17">[9]</a>, <a href="#bookmark18">[15]</a>, <a href="#bookmark19">[16]</a>. Learning automata learn through rewards and penalties which are awarded after successful and unsuccessful decisions respectively. However, whereas the authors have focused on conventional load balancing and process migration, we concentrate on task assignment. Another popular classifier, the C4.5 Decision Tree has also been applied in process scheduling in Linux<a href="#bookmark20">[19]</a>.</span></p>
-<p><span class="font7">Bayesian Learning has been used effectively in dealing with uncertainty in shared cluster environments <a href="#bookmark21">[20]</a>, <a href="#bookmark22">[21]</a>. The authors have used a bayesian decision network (BDN) to handle the conditional dependence between different factors involved in a load balancing problems. Dynamic Bayesian Networks <a href="#bookmark23">[10]</a> have been used for load balancing as well. The similarity between their and our approach is the use of Bayesian inference. However whereas the authors in <a href="#bookmark22">[21]</a> have used a BDN, we use a Naive Bayes classifier, where all factors involved in making the decision are assumed to be conditionally independent of each other. Despite the assumption, Naive Bayes classifiers are known to work remarkably well <a href="#bookmark24">[24]</a>, and as our results indicate it can be effectively applied to task assignment as well. Compared to Bayesian Networks, Naive Bayes Classifiers are much simpler to implement. In addition to Naive Bayes classifier, we have also used a perceptron classifier.</span></p>
-<p><a name="bookmark25"></a><span class="font7">Next, we give an overview of the scheduling in Hadoop and discuss the motivation for using a learning based approach.</span></p>
-<p><span class="font7">III. </span><span class="font6" style="font-variant:small-caps;">Overview of scheduling in Hadoop</span></p>
-<p><span class="font7">To better understand our approach and the limitations of current Hadoop schedulers, we now explain the key concepts involved in Hadoop scheduling.</span></p><img src="learning-scheduler_files/learning-scheduler-1.jpg" style="width:211pt;height:183pt;"/>
+
+<p><span class="font7">The initial work presenting MapReduce <a href="#bookmark1">[12]</a> only briefly discusses resource management. Much of Hadoop's architecture<a
+		href="#bookmark2">[2]</a> is inspired by their work. They also mention that data local execution and speculative execution, i.e. reexecution of 'slow' tasks results in up to 40% improvement in response times. Their work, however does not discuss approaches to improve utilization on a cluster, other than to divide a job into large number of subtasks for better failure recovery and more granular scheduling.</span>
+</p>
+
+<p><span class="font7">The LATE scheduler <a href="#bookmark7">[22]</a> tries to improve response time of Hadoop in multiuser environments by improving speculative execution. It relaunches tasks expected to “finish farthest into the future”. To better accommodate different types of tasks, task progress is divided into zones. A user defined limit is used to control the number of speculative tasks assigned to one node. The LATE scheduler achieves better response times especially in heterogeneous cloud environments. We would like to point out that speculative execution tries to improve performance by </span><span
+		class="font7" style="font-style:italic;">curing</span><span class="font7"> node overload, whereas our algorithm tries to </span><span
+		class="font7" style="font-style:italic;">prevent</span><span class="font7"> overload altogether by selectively assigning only those tasks which are unlikely to overload a given node.</span>
+</p>
+
+<p><span class="font7">The FAIR scheduler <a href="#bookmark13">[23]</a>, Capacity scheduler<a
+		href="#bookmark14">[3]</a>, and the Dynamic Priority scheduler<a href="#bookmark15">[5]</a>, try to achieve fairness, guaranteed capacity and adjustable priority based scheduling respectively. Hadoop on Demand<a
+		href="#bookmark16">[6]</a> tries to use existing cluster managers for resource management in Hadoop. It should be noted that these schedulers concentrate either on policy enforcement (fairness, for example) or on improving response time of jobs from the perspective of the users. Our work differs from these approaches in that, we allow a service provider to plug in his/her own policy scheme, while maintaining a specified level of utilization. Also, as discussed further in section<a
+		href="#bookmark9"> III,</a> all of these schedulers allocate tasks only if there are fewer than maximum allowed tasks (a limit set by the administrator) running on a worker machine. Our scheduler, on the other hand assigns tasks as long as any additional task is likely to overload a worker machine.</span>
+</p>
+
+<p><span class="font7">Stochastic Learning Automata have been used in load balancing <a href="#bookmark17">[9]</a>, <a
+		href="#bookmark18">[15]</a>, <a href="#bookmark19">[16]</a>. Learning automata learn through rewards and penalties which are awarded after successful and unsuccessful decisions respectively. However, whereas the authors have focused on conventional load balancing and process migration, we concentrate on task assignment. Another popular classifier, the C4.5 Decision Tree has also been applied in process scheduling in Linux<a
+		href="#bookmark20">[19]</a>.</span></p>
+
+<p><span class="font7">Bayesian Learning has been used effectively in dealing with uncertainty in shared cluster environments <a
+		href="#bookmark21">[20]</a>, <a href="#bookmark22">[21]</a>. The authors have used a bayesian decision network (BDN) to handle the conditional dependence between different factors involved in a load balancing problems. Dynamic Bayesian Networks <a
+		href="#bookmark23">[10]</a> have been used for load balancing as well. The similarity between their and our approach is the use of Bayesian inference. However whereas the authors in <a
+		href="#bookmark22">[21]</a> have used a BDN, we use a Naive Bayes classifier, where all factors involved in making the decision are assumed to be conditionally independent of each other. Despite the assumption, Naive Bayes classifiers are known to work remarkably well <a
+		href="#bookmark24">[24]</a>, and as our results indicate it can be effectively applied to task assignment as well. Compared to Bayesian Networks, Naive Bayes Classifiers are much simpler to implement. In addition to Naive Bayes classifier, we have also used a perceptron classifier.</span>
+</p>
+
+<p><a name="bookmark25"></a><span class="font7">Next, we give an overview of the scheduling in Hadoop and discuss the motivation for using a learning based approach.</span>
+</p>
+
+<p><span class="font7">III. </span><span class="font6"
+																				 style="font-variant:small-caps;">Overview of scheduling in Hadoop</span></p>
+
+<p><span class="font7">To better understand our approach and the limitations of current Hadoop schedulers, we now explain the key concepts involved in Hadoop scheduling.</span>
+</p>
+<img src="learning-scheduler_files/learning-scheduler-1.jpg" style="width:211pt;height:183pt;"/>
+
 <p><a name="bookmark9"></a><span class="font7">Fig. 1: Hadoop MapReduce Architecture</span></p>
-<p><span class="font7">Hadoop borrows much of its architecture from the original MapReduce system at Google <a href="#bookmark1">[12]</a>. Figure<a href="#bookmark9"> 1 </a>depicts the architecture of Hadoop's MapReduce implementation. Although the architecture is centralized, Hadoop is known to scale well from small (single node) to very large (upto 4000 nodes) installations <a href="#bookmark4">[8]</a>. HDFS (Hadoop Distributed File Systems) deals with storage and is based on the Google File System <a href="#bookmark26">[14]</a>, and MapReduce deals with computation.</span></p>
-<p><span class="font7">Each MapReduce job is subdivided into a number of tasks for better granularity in task assignment. Individual tasks of a job are independent of each other, and are executed in parallel. The number of Map tasks created for a job is usually proportional to size of input. For very large input size (of the order of petabytes), several hundred thousand tasks could be created <a href="#bookmark27">[11]</a>.</span></p>
-<p><span class="font7">Scheduling in Hadoop is centralized, and worker initiated. Scheduling decisions are taken by a master node, called the</span></p>
-<p><span class="font7">JobTracker, whereas the worker nodes, called TaskTrackers are responsible for task execution. The JobTracker maintains a queue of currently running jobs, states of TaskTrackers in a cluster, and list of tasks allocated to each TaskTracker. Every TaskTracker periodically reports its state to the JobTracker via a heartbeat mechanism. The contents of the heartbeat message are:</span></p>
+
+<p><span class="font7">Hadoop borrows much of its architecture from the original MapReduce system at Google <a
+		href="#bookmark1">[12]</a>. Figure<a href="#bookmark9"> 1 </a>depicts the architecture of Hadoop's MapReduce implementation. Although the architecture is centralized, Hadoop is known to scale well from small (single node) to very large (upto 4000 nodes) installations <a
+		href="#bookmark4">[8]</a>. HDFS (Hadoop Distributed File Systems) deals with storage and is based on the Google File System <a
+		href="#bookmark26">[14]</a>, and MapReduce deals with computation.</span></p>
+
+<p><span class="font7">Each MapReduce job is subdivided into a number of tasks for better granularity in task assignment. Individual tasks of a job are independent of each other, and are executed in parallel. The number of Map tasks created for a job is usually proportional to size of input. For very large input size (of the order of petabytes), several hundred thousand tasks could be created <a
+		href="#bookmark27">[11]</a>.</span></p>
+
+<p><span class="font7">Scheduling in Hadoop is centralized, and worker initiated. Scheduling decisions are taken by a master node, called the</span>
+</p>
+
+<p><span class="font7">JobTracker, whereas the worker nodes, called TaskTrackers are responsible for task execution. The JobTracker maintains a queue of currently running jobs, states of TaskTrackers in a cluster, and list of tasks allocated to each TaskTracker. Every TaskTracker periodically reports its state to the JobTracker via a heartbeat mechanism. The contents of the heartbeat message are:</span>
+</p>
+
 <p><span class="font7">• &nbsp;&nbsp;&nbsp;Progress report of tasks currently running on sender TaskTracker.</span></p>
+
 <p><span class="font7">• &nbsp;&nbsp;&nbsp;Lists of completed or failed tasks.</span></p>
+
 <p><span class="font7">• &nbsp;&nbsp;&nbsp;State of resources - virtual memory, disk space, etc.</span></p>
-<p><span class="font7">• &nbsp;&nbsp;&nbsp;A boolean flag (acceptNewTasks) indicating whether the sender TaskTracker should be assigned additional tasks. This flag is set if the number of tasks running at the TaskTracker is less than the configured limit.</span></p>
-<p><span class="font7">Task or worker failures are dealt by relaunching tasks. The JobTracker keeps track of the heartbeats received from the workers and uses it in task assignment. If a heartbeat is not received from a TaskTracker for a specified time interval, then that TaskTracker is assumed to be dead. The JobTracker then relaunches all the tasks previously assigned to the dead TaskTracker, that could not be completed. The Heartbeat mechanism also provides a communication channel between the JobTracker and a TaskTracker. Any task assignments are sent to the TaskTracker in the response of a heartbeat. The TaskTracker spawns each MapReduce task in a separate process, in order to isolate itself from faults due to user code in the tasks.</span></p>
-<p><span class="font7">Data locality and speculative execution are two important features of Hadoop's scheduling. Data locality is about executing tasks as close to their input data as possible. Speculative execution tries to rebalance load on the worker nodes and tries to improve response time by relaunching slow tasks on different TaskTrackers with more resources.</span></p>
-<p><span class="font7">The administrator specifies the maximum number of Map and Reduce tasks (mapred.map.tasks.maximum and mapred.reduce.tasks.maximum in Hadoop’s configuration files) that can simultaneously run on a TaskTracker. If the number of tasks currently running on a TaskTracker is less than this limit, and if there is enough disk space available, the TaskTracker can accept new tasks. This limit should be specified before starting a Hadoop cluster. This mechanism makes some assumptions which we find objectionable:</span></p>
-<p><span class="font7">• &nbsp;&nbsp;&nbsp;In order to correctly set the limit, the administrator has detailed knowledge about the resource usage characteristics of MapReduce applications running on the cluster. Deciding the task limit is even more difficult in cloud computing environments such as the Amazon EC2, where the resources could be virtual.</span></p>
+
+<p><span class="font7">• &nbsp;&nbsp;&nbsp;A boolean flag (acceptNewTasks) indicating whether the sender TaskTracker should be assigned additional tasks. This flag is set if the number of tasks running at the TaskTracker is less than the configured limit.</span>
+</p>
+
+<p><span class="font7">Task or worker failures are dealt by relaunching tasks. The JobTracker keeps track of the heartbeats received from the workers and uses it in task assignment. If a heartbeat is not received from a TaskTracker for a specified time interval, then that TaskTracker is assumed to be dead. The JobTracker then relaunches all the tasks previously assigned to the dead TaskTracker, that could not be completed. The Heartbeat mechanism also provides a communication channel between the JobTracker and a TaskTracker. Any task assignments are sent to the TaskTracker in the response of a heartbeat. The TaskTracker spawns each MapReduce task in a separate process, in order to isolate itself from faults due to user code in the tasks.</span>
+</p>
+
+<p><span class="font7">Data locality and speculative execution are two important features of Hadoop's scheduling. Data locality is about executing tasks as close to their input data as possible. Speculative execution tries to rebalance load on the worker nodes and tries to improve response time by relaunching slow tasks on different TaskTrackers with more resources.</span>
+</p>
+
+<p><span class="font7">The administrator specifies the maximum number of Map and Reduce tasks (mapred.map.tasks.maximum and mapred.reduce.tasks.maximum in Hadoop’s configuration files) that can simultaneously run on a TaskTracker. If the number of tasks currently running on a TaskTracker is less than this limit, and if there is enough disk space available, the TaskTracker can accept new tasks. This limit should be specified before starting a Hadoop cluster. This mechanism makes some assumptions which we find objectionable:</span>
+</p>
+
+<p><span class="font7">• &nbsp;&nbsp;&nbsp;In order to correctly set the limit, the administrator has detailed knowledge about the resource usage characteristics of MapReduce applications running on the cluster. Deciding the task limit is even more difficult in cloud computing environments such as the Amazon EC2, where the resources could be virtual.</span>
+</p>
+
 <p><span class="font7">• &nbsp;&nbsp;&nbsp;All MapReduce applications have similar resource requirements.</span></p>
-<p><span class="font7">• &nbsp;&nbsp;&nbsp;The limit on max number of concurrent tasks correctly describes the capacity of a machine.</span></p>
-<p><span class="font7">Clearly, these assumptions do not hold in real world scenarios given the range of applications for which Hadoop is becoming popular <a href="#bookmark3">[7]</a>.As the above assumptions have been built into Hadoop, all the current schedulers available with Hadoop, the Hadoop default scheduler, FAIR scheduler <a href="#bookmark13">[23]</a>, the capacity scheduler <a href="#bookmark14">[3]</a> and the dynamic priority scheduler <a href="#bookmark15">[5]</a> suffer from this limitation.</span></p><img src="learning-scheduler_files/learning-scheduler-2.jpg" style="width:245pt;height:133pt;"/>
-<p><a name="bookmark28"></a><span class="font7">Fig. 2: CPU usage patterns of MapReduce applica-tion(wordcount). Mean and variance of the resource usage distributions become recognizable characteristics of a particular MapReduce job.</span></p>
-<p><a name="bookmark10"></a><span class="font7">MapReduce applications have been successfully used in processing large amounts of data. Subtasks of the same type of a job apply the exact same computation on input data. Tasks tend to be I/O bound, with resource usages as a function of the size rather than the </span><span class="font7" style="font-style:italic;">content</span><span class="font7"> of input data. As a result, the resource usage patterns of a MapReduce job tend to be fairly predictable. For example, in Figure<a href="#bookmark28"> 2,</a> we show the CPU time spent in user mode and kernel mode by Map tasks of a WordCount job. The figure shows distribution of CPU usages for about 1700 Map tasks. As we can deduce from the figure, the resource usage of MapReduce applications follow recognizable patterns. Similar behavior is observed for other MapReduce apps and resource types. This, and the fact that the number of tasks increase with the size of input data, present a unique opportunity for using learning based approaches.</span></p>
+
+<p><span class="font7">• &nbsp;&nbsp;&nbsp;The limit on max number of concurrent tasks correctly describes the capacity of a machine.</span>
+</p>
+
+<p><span class="font7">Clearly, these assumptions do not hold in real world scenarios given the range of applications for which Hadoop is becoming popular <a
+		href="#bookmark3">[7]</a>.As the above assumptions have been built into Hadoop, all the current schedulers available with Hadoop, the Hadoop default scheduler, FAIR scheduler <a
+		href="#bookmark13">[23]</a>, the capacity scheduler <a href="#bookmark14">[3]</a> and the dynamic priority scheduler <a
+		href="#bookmark15">[5]</a> suffer from this limitation.</span></p>
+<img
+		src="learning-scheduler_files/learning-scheduler-2.jpg" style="width:245pt;height:133pt;"/>
+
+<p><a name="bookmark28"></a><span class="font7">Fig. 2: CPU usage patterns of MapReduce applica-tion(wordcount). Mean and variance of the resource usage distributions become recognizable characteristics of a particular MapReduce job.</span>
+</p>
+
+<p><a name="bookmark10"></a><span class="font7">MapReduce applications have been successfully used in processing large amounts of data. Subtasks of the same type of a job apply the exact same computation on input data. Tasks tend to be I/O bound, with resource usages as a function of the size rather than the </span><span
+		class="font7" style="font-style:italic;">content</span><span class="font7"> of input data. As a result, the resource usage patterns of a MapReduce job tend to be fairly predictable. For example, in Figure<a
+		href="#bookmark28"> 2,</a> we show the CPU time spent in user mode and kernel mode by Map tasks of a WordCount job. The figure shows distribution of CPU usages for about 1700 Map tasks. As we can deduce from the figure, the resource usage of MapReduce applications follow recognizable patterns. Similar behavior is observed for other MapReduce apps and resource types. This, and the fact that the number of tasks increase with the size of input data, present a unique opportunity for using learning based approaches.</span>
+</p>
+
 <p><span class="font7">IV. </span><span class="font6" style="font-variant:small-caps;">Proposed algorithm</span></p>
-<p><span class="font7">Having seen the scheduling mechanism in Hadoop, we explain our task assignment algorithm in this section. Our algorithm runs at the JobTracker. Whenever a heartbeat from a TaskTracker is received at the JobTracker, the scheduler chooses a task from the MapReduce job that is expected to provide maximum utility after successful completion of the task. Figure<a href="#bookmark29"> 3 </a>depicts the task assignment process.</span></p>
-<p><span class="font7">First, we build a list of candidate jobs. For each job in the queue of the scheduler, one candidate instance for Map part and one (or zero, if the job does not have a reduce part) for the Reduce part is added in the list. This is done because the resource requirements of Map and Reduce tasks are usually different.</span></p>
-<p><span class="font7">We then classify the candidate jobs into two classes, </span><span class="font7" style="font-style:italic;">good </span><span class="font7">and </span><span class="font7" style="font-style:italic;">bad,</span><span class="font7"> using a pattern classifier. Tasks of good jobs do not</span></p><img src="learning-scheduler_files/learning-scheduler-3.jpg" style="width:221pt;height:217pt;"/>
-<p><a name="bookmark29"></a><span class="font7">Fig. 3: Task assignment using pattern classification. Evaluation of last decision, and classification for current decision are done asynchronously.</span></p>
-<p><a name="bookmark29"></a><span class="font6"><a name="bookmark30"></a>overload resources at the TaskTracker during their execution. Jobs labeled </span><span class="font5" style="font-style:italic;">bad</span><span class="font6"> are not considered for task assignment. If the classifier labels all the jobs as </span><span class="font5" style="font-style:italic;">bad,</span><span class="font6"> no task is assigned to the TaskTracker.</span></p>
-<p><span class="font6">If after classification, there are multiple jobs belonging to the </span><span class="font5" style="font-style:italic;">good</span><span class="font6"> class, then we <a name="bookmark31"></a>choose the task of a job that maximizes the following quantity:</span></p>
-<p><span class="font6"><img src="learning-scheduler_files/learning-scheduler-4.png" style="width:232pt;height:22pt;"/></span></p>
-<p><span class="font6">where, </span><span class="font5" style="font-style:italic;">E.U.(J</span><span class="font6">) is the expected utility, and </span><span class="font5" style="font-style:italic;">U(J</span><span class="font6">) is the value of utility function associated with the MapReduce job J. </span><span class="font3" style="font-weight:bold;font-style:italic;font-variant:small-caps;">t<sub>j</sub> </span><span class="font6">denotes a task of job J, and </span><span class="font5" style="font-style:italic;">P </span><span class="font3" style="font-weight:bold;font-style:italic;font-variant:small-caps;">(t<sub>j</sub> </span><span class="font5" style="font-style:italic;">= good\F<sub>l</sub>,</span><span class="font6"> F<sub>2</sub>,..., </span><span class="font5" style="font-style:italic;">F<sub>n</sub>)</span><span class="font6"> denotes the probability that the task </span><span class="font0">t<sub>j</span><span class="font3"></sub> </span><span class="font6">is </span><span class="font5" style="font-style:italic;">good.</span><span class="font6"> The probability is conditional upon the feature variables </span><span class="font5" style="font-style:italic;">F<sub>1</sub>,</span><span class="font6"> F<sub>2</sub>,..., </span><span class="font5" style="font-style:italic;">F</span><span class="font6"><sub>n</sub>. Feature variables are described in more detail later in this section.</span></p>
-<p><span class="font6">Once a job is selected, we first try to schedule a task of the job whose input data are locally available on the TaskTracker. Otherwise, we chose a non data local task. This policy is the same as used by the default Hadoop scheduler.</span></p>
-<p><span class="font6">We assume that the cluster is dedicated for MapReduce processing, and that the JobTracker is aware and responsible for every task execution in the cluster. Our scheduling algorithm is </span><span class="font5" style="font-style:italic;">local</span><span class="font6"> as we consider state of only the concerned TaskTracker while making an assignment decision. The decision does not depend on state of resources of other TaskTrackers.</span></p>
-<p><a name="bookmark32"></a><span class="font6">We track the task assignment decisions. Once a task is assigned, we observe the effect of the task from information contained in subsequent heartbeat from the same TaskTracker. If based on this information, the TaskTracker is overloaded, we conclude that last task assignment was incorrect. The pattern classifier is then updated (trained) to avoid such assignments in the future. If however, the TaskTracker is not overloaded, then</span></p>
+
+<p><span class="font7">Having seen the scheduling mechanism in Hadoop, we explain our task assignment algorithm in this section. Our algorithm runs at the JobTracker. Whenever a heartbeat from a TaskTracker is received at the JobTracker, the scheduler chooses a task from the MapReduce job that is expected to provide maximum utility after successful completion of the task. Figure<a
+		href="#bookmark29"> 3 </a>depicts the task assignment process.</span></p>
+
+<p><span class="font7">First, we build a list of candidate jobs. For each job in the queue of the scheduler, one candidate instance for Map part and one (or zero, if the job does not have a reduce part) for the Reduce part is added in the list. This is done because the resource requirements of Map and Reduce tasks are usually different.</span>
+</p>
+
+<p><span class="font7">We then classify the candidate jobs into two classes, </span><span class="font7"
+																																													style="font-style:italic;">good </span><span
+		class="font7">and </span><span class="font7" style="font-style:italic;">bad,</span><span class="font7"> using a pattern classifier. Tasks of good jobs do not</span>
+</p>
+<img src="learning-scheduler_files/learning-scheduler-3.jpg" style="width:221pt;height:217pt;"/>
+
+<p><a name="bookmark29"></a><span class="font7">Fig. 3: Task assignment using pattern classification. Evaluation of last decision, and classification for current decision are done asynchronously.</span>
+</p>
+
+<p><a name="bookmark29"></a><span class="font6"><a name="bookmark30"></a>overload resources at the TaskTracker during their execution. Jobs labeled </span><span
+		class="font5" style="font-style:italic;">bad</span><span class="font6"> are not considered for task assignment. If the classifier labels all the jobs as </span><span
+		class="font5" style="font-style:italic;">bad,</span><span
+		class="font6"> no task is assigned to the TaskTracker.</span></p>
+
+<p><span class="font6">If after classification, there are multiple jobs belonging to the </span><span class="font5"
+																																																			style="font-style:italic;">good</span><span
+		class="font6"> class, then we <a name="bookmark31"></a>choose the task of a job that maximizes the following quantity:</span>
+</p>
+
+<p><span class="font6"><img src="learning-scheduler_files/learning-scheduler-4.png"
+														style="width:232pt;height:22pt;"/></span></p>
+
+<p><span class="font6">where, </span><span class="font5" style="font-style:italic;">E.U.(J</span><span class="font6">) is the expected utility, and </span><span
+		class="font5" style="font-style:italic;">U(J</span><span class="font6">) is the value of utility function associated with the MapReduce job J. </span><span
+		class="font3" style="font-weight:bold;font-style:italic;font-variant:small-caps;">t<sub>j</sub> </span><span
+		class="font6">denotes a task of job J, and </span><span class="font5" style="font-style:italic;">P </span><span
+		class="font3" style="font-weight:bold;font-style:italic;font-variant:small-caps;">(t<sub>j</sub> </span><span
+		class="font5" style="font-style:italic;">= good\F<sub>l</sub>,</span><span class="font6"> F<sub>2</sub>,..., </span><span
+		class="font5" style="font-style:italic;">F<sub>n</sub>)</span><span class="font6"> denotes the probability that the task </span><span
+		class="font0">t<sub>j</sub></span><span class="font3"></sub> </span><span class="font6">is </span><span
+		class="font5" style="font-style:italic;">good.</span><span class="font6"> The probability is conditional upon the feature variables </span><span
+		class="font5" style="font-style:italic;">F<sub>1</sub>,</span><span class="font6"> F<sub>2</sub>,..., </span><span
+		class="font5" style="font-style:italic;">F</span><span class="font6"><sub>n</sub>. Feature variables are described in more detail later in this section.</span>
+</p>
+
+<p><span class="font6">Once a job is selected, we first try to schedule a task of the job whose input data are locally available on the TaskTracker. Otherwise, we chose a non data local task. This policy is the same as used by the default Hadoop scheduler.</span>
+</p>
+
+<p><span class="font6">We assume that the cluster is dedicated for MapReduce processing, and that the JobTracker is aware and responsible for every task execution in the cluster. Our scheduling algorithm is </span><span
+		class="font5" style="font-style:italic;">local</span><span class="font6"> as we consider state of only the concerned TaskTracker while making an assignment decision. The decision does not depend on state of resources of other TaskTrackers.</span>
+</p>
+
+<p><a name="bookmark32"></a><span class="font6">We track the task assignment decisions. Once a task is assigned, we observe the effect of the task from information contained in subsequent heartbeat from the same TaskTracker. If based on this information, the TaskTracker is overloaded, we conclude that last task assignment was incorrect. The pattern classifier is then updated (trained) to avoid such assignments in the future. If however, the TaskTracker is not overloaded, then</span>
+</p>
+
 <p><span class="font7">the task assignment decision is considered to be successful.</span></p>
-<p><span class="font7">Users configure overload rules based on their requirements. For example, if most of the jobs submitted are known to be CPU intensive, then CPU utilization or load average could be used in deciding node overload. For jobs with heavy network activity, network usage can also be included in the overload rule. In a cloud computing environment, only those resources whose usage is billed could be considered in the overload rule. For example, where conserving bandwidth is important, an overload rule could declare a task allocation as incorrect if it results in more network usage than the limit set by the user.</span></p>
-<p><span class="font7">The overload rules </span><span class="font7" style="font-style:italic;">supervise</span><span class="font7"> the classifiers. But, as this process is automated, the learning in our algorithm is </span><span class="font7" style="font-style:italic;">automatically supervised.</span><span class="font7"> The only requirement for an overload rule is that it can correctly identify given state of a node as being overloaded or underloaded. It is important that the overload rule remains the same during the execution of the system. Also, the rule should be consistent for the classifiers to converge.</span></p>
-<p><a name="bookmark30"></a><span class="font7" style="font-style:italic;">A. &nbsp;&nbsp;&nbsp;Feature Variables</span></p>
-<p><span class="font7">During classification, the pattern classifier takes into account a number of features variables, which might affect the classification decision. The features we use are described below:</span></p>
-<p><span class="font7">Job Features: These features describe the resource usage patterns of a job. These features could be calculated by analyzing past execution traces of the job. We assume that there exists a system which can provide this information. In absence of such a system, the users can utilize these features to submit 'hints' about job performance to the classifier. Once enough data about job performance is available, user hints could be mapped to resource usage information. The job features we consider are: job mean CPU usage, job mean network usage, mean disk I/O rate, and mean memory usage. The users estimate the usages on the scale of 10. A value of 1 for a resource means minimum usage, whereas 10 corresponds to maximum usage. For a given MapReduce job, the resource usage variables of the Map part and the Reduce part are considered different.</span></p>
-<p><span class="font7">Node Features (NF): Node features denote the state and quality of computational resources of a node. Node Static Features change very rarely, or remain constant throughout the execution of the system. These include number of processors, processor speed, total physical memory, total swap memory, number of disks, name and version of the Operating System at the TaskTracker, etc. Node Dynamic Features include properties that vary frequently with time. Examples of such properties are CPU load averages, % CPU usage, I/O read/write rate, Network transmit/receive rates, number of processes running at the TaskTracker, amount of free memory, amount of free swap memory, disk space left etc. Processor speed could be be a dynamic feature on nodes where CPUs support dynamic frequency and voltage scaling.</span></p>
-<p><a name="bookmark32"></a><span class="font7" style="font-style:italic;">B. &nbsp;&nbsp;&nbsp;Utility Functions</span></p>
-<p><span class="font7">Utility functions are used for prioritizing jobs and policy enforcement. An important role of the utility functions is to</span></p>
-<p><span class="font7">make sure that the scheduler does not always pick up ‘easy’ tasks. If the utility of all the jobs is same, the scheduler will always pick up tasks that are more likely to be labeled </span><span class="font5" style="font-style:italic;">good, </span><span class="font7">which are usually the tasks that demand lesser resources. Thus, by appropriately adjusting job utility it could be made sure that every job gets a chance to be selected.</span></p>
-<p><span class="font7">It is possible that a certain job is always classified as </span><span class="font5" style="font-style:italic;">bad </span><span class="font7">regardless of the values of feature vectors. This could happen if the resource requirements of the job are exceptionally high. However, this also indicates that the available resources are clearly inadequate to complete such a job without overloading.</span></p>
-<p><span class="font7">Utility functions could also be used in enforcing different scheduling policies. Examples of some such policies are given below. One or more utility functions could be combined in order to enforce hybrid scheduling policies.</span></p>
-<p><span class="font7">1) &nbsp;&nbsp;&nbsp;Map before Reduce: In MapReduce, it is necessary that all Map tasks of a job are finished before Reduce operation begins. This can be implemented by keeping the utility of Reduce tasks zero until a sufficient number of Map tasks have completed.</span></p>
-<p><span class="font7">2) &nbsp;&nbsp;&nbsp;First Come, First Serve (FCFS or FIFO): FCFS policy can be implemented by keeping the utility of the job proportional to the age of the job. Age of a job is zero at submission time.</span></p>
-<p><span class="font7">3) &nbsp;&nbsp;&nbsp;Budget Constrained: In this policy, tasks of a job are allocated until the user of a job has sufficient balance in his/her account. As soon as the balance reaches zero, the utility of jobs of the said user becomes zero, thus no further tasks of jobs from the said user will be assigned to worker nodes.</span></p>
-<p><span class="font7">4) &nbsp;&nbsp;&nbsp;Dedicated Capacity: In this policy a job is allowed a guaranteed access to a fraction of the total resources in the cluster. Here, the utility could be inversely proportional to the deficit in the currently allocated fraction, and the promised fraction. Utility of jobs allocated more than the promised fraction is set to zero to make sure that they are not considered during task assignment.</span></p>
-<p><span class="font7">5) &nbsp;&nbsp;&nbsp;Revenue oriented utility: In this policy, utility of a job is directly proportional to the amount the job’s submitter is willing to pay for successful completion of the job. This makes sure that the algorithm always picks tasks of users who are offering more money for the service.</span></p>
-<p><a name="bookmark33"></a><span class="font7">Next, we explain how the same algorithm can be implemented by using two different pattern classifiers. In this paper we consider only the Naive Bayes Classifier, and the Perceptron classifier <a href="#bookmark34">[13]</a>. Theoretically, any linear classifier could be used for classifying jobs. However, we discuss these two based on their ease of implementation, and the ability of learning from one sample at a time (online learning). Online learning helps in keeping memory used by the classifiers constant w.r.t the number of feature vectors. This is essential in our case; efficiency is an important goal for a scheduler implementation.</span></p>
-<p><span class="font5" style="font-style:italic;">C. Using a Naive Bayes Classifier </span><span class="font7">If we apply Bayes theorem to equation<a href="#bookmark31"> 1 </a>mentioned in the beginning of this section, we get,</span></p><img src="learning-scheduler_files/learning-scheduler-5.png" style="width:245pt;height:45pt;"/>
-<p><span class="font7">The denominator in the above equation can be treated as a constant as its value is independent of the jobs, and thus its calculation can be skipped during comparison.</span></p>
-<p><span class="font7">We calculate both P(</span><span class="font4" style="font-style:italic;font-variant:small-caps;">t<sub>j</span><span class="font3"></sub> </span><span class="font7">= good|Fi, F<sub>2</sub>,...,F<sub>n</sub>) and </span><span class="font4" style="font-style:italic;font-variant:small-caps;">P(tj </span><span class="font5" style="font-style:italic;">=</span><span class="font7"> bad|Fi, F<sub>2</sub>,..., F<sub>n</sub>). Job is labeled as </span><span class="font5" style="font-style:italic;">good</span><span class="font7"> or </span><span class="font5" style="font-style:italic;">bad </span><span class="font7">depending on which of the two probabilities is higher. Under the assumption of Naive Bayes conditional independence we get,</span></p>
-<p><span class="font6"><img src="learning-scheduler_files/learning-scheduler-6.png" style="width:238pt;height:28pt;"/></span></p>
-<p><span class="font7">Thus, we compute the following quantity for all the jobs and select the job that maximizes it.</span></p>
-<p><span class="font6"><img src="learning-scheduler_files/learning-scheduler-7.png" style="width:232pt;height:34pt;"/></span></p>
-<p><span class="font7">Once the effects of a task assignments are observed, the probabilities are updated accordingly so that future decisions could benefit from the lessons learnt from the effects of current decisions.</span></p>
-<p><span class="font7">Here we assume that the probabilities of all feature variables are conditionally independent of each other. This may not always be true. However, we observed that this assumption can yield a much simpler implementation. Despite the assumption, Naive Bayes classifiers are known to perform well. Our results show that the assumption does not have any drastic undesired effects on the overall performance of the scheduler.</span></p>
+
+<p><span class="font7">Users configure overload rules based on their requirements. For example, if most of the jobs submitted are known to be CPU intensive, then CPU utilization or load average could be used in deciding node overload. For jobs with heavy network activity, network usage can also be included in the overload rule. In a cloud computing environment, only those resources whose usage is billed could be considered in the overload rule. For example, where conserving bandwidth is important, an overload rule could declare a task allocation as incorrect if it results in more network usage than the limit set by the user.</span>
+</p>
+
+<p><span class="font7">The overload rules </span><span class="font7" style="font-style:italic;">supervise</span><span
+		class="font7"> the classifiers. But, as this process is automated, the learning in our algorithm is </span><span
+		class="font7" style="font-style:italic;">automatically supervised.</span><span class="font7"> The only requirement for an overload rule is that it can correctly identify given state of a node as being overloaded or underloaded. It is important that the overload rule remains the same during the execution of the system. Also, the rule should be consistent for the classifiers to converge.</span>
+</p>
+
+<p><a name="bookmark30"></a><span class="font7" style="font-style:italic;">A. &nbsp;&nbsp;&nbsp;Feature Variables</span>
+</p>
+
+<p><span class="font7">During classification, the pattern classifier takes into account a number of features variables, which might affect the classification decision. The features we use are described below:</span>
+</p>
+
+<p><span class="font7">Job Features: These features describe the resource usage patterns of a job. These features could be calculated by analyzing past execution traces of the job. We assume that there exists a system which can provide this information. In absence of such a system, the users can utilize these features to submit 'hints' about job performance to the classifier. Once enough data about job performance is available, user hints could be mapped to resource usage information. The job features we consider are: job mean CPU usage, job mean network usage, mean disk I/O rate, and mean memory usage. The users estimate the usages on the scale of 10. A value of 1 for a resource means minimum usage, whereas 10 corresponds to maximum usage. For a given MapReduce job, the resource usage variables of the Map part and the Reduce part are considered different.</span>
+</p>
+
+<p><span class="font7">Node Features (NF): Node features denote the state and quality of computational resources of a node. Node Static Features change very rarely, or remain constant throughout the execution of the system. These include number of processors, processor speed, total physical memory, total swap memory, number of disks, name and version of the Operating System at the TaskTracker, etc. Node Dynamic Features include properties that vary frequently with time. Examples of such properties are CPU load averages, % CPU usage, I/O read/write rate, Network transmit/receive rates, number of processes running at the TaskTracker, amount of free memory, amount of free swap memory, disk space left etc. Processor speed could be be a dynamic feature on nodes where CPUs support dynamic frequency and voltage scaling.</span>
+</p>
+
+<p><a name="bookmark32"></a><span class="font7" style="font-style:italic;">B. &nbsp;&nbsp;&nbsp;Utility Functions</span>
+</p>
+
+<p><span class="font7">Utility functions are used for prioritizing jobs and policy enforcement. An important role of the utility functions is to</span>
+</p>
+
+<p><span class="font7">make sure that the scheduler does not always pick up ‘easy’ tasks. If the utility of all the jobs is same, the scheduler will always pick up tasks that are more likely to be labeled </span><span
+		class="font5" style="font-style:italic;">good, </span><span class="font7">which are usually the tasks that demand lesser resources. Thus, by appropriately adjusting job utility it could be made sure that every job gets a chance to be selected.</span>
+</p>
+
+<p><span class="font7">It is possible that a certain job is always classified as </span><span class="font5"
+																																															style="font-style:italic;">bad </span><span
+		class="font7">regardless of the values of feature vectors. This could happen if the resource requirements of the job are exceptionally high. However, this also indicates that the available resources are clearly inadequate to complete such a job without overloading.</span>
+</p>
+
+<p><span class="font7">Utility functions could also be used in enforcing different scheduling policies. Examples of some such policies are given below. One or more utility functions could be combined in order to enforce hybrid scheduling policies.</span>
+</p>
+
+<p><span class="font7">1) &nbsp;&nbsp;&nbsp;Map before Reduce: In MapReduce, it is necessary that all Map tasks of a job are finished before Reduce operation begins. This can be implemented by keeping the utility of Reduce tasks zero until a sufficient number of Map tasks have completed.</span>
+</p>
+
+<p><span class="font7">2) &nbsp;&nbsp;&nbsp;First Come, First Serve (FCFS or FIFO): FCFS policy can be implemented by keeping the utility of the job proportional to the age of the job. Age of a job is zero at submission time.</span>
+</p>
+
+<p><span class="font7">3) &nbsp;&nbsp;&nbsp;Budget Constrained: In this policy, tasks of a job are allocated until the user of a job has sufficient balance in his/her account. As soon as the balance reaches zero, the utility of jobs of the said user becomes zero, thus no further tasks of jobs from the said user will be assigned to worker nodes.</span>
+</p>
+
+<p><span class="font7">4) &nbsp;&nbsp;&nbsp;Dedicated Capacity: In this policy a job is allowed a guaranteed access to a fraction of the total resources in the cluster. Here, the utility could be inversely proportional to the deficit in the currently allocated fraction, and the promised fraction. Utility of jobs allocated more than the promised fraction is set to zero to make sure that they are not considered during task assignment.</span>
+</p>
+
+<p><span class="font7">5) &nbsp;&nbsp;&nbsp;Revenue oriented utility: In this policy, utility of a job is directly proportional to the amount the job’s submitter is willing to pay for successful completion of the job. This makes sure that the algorithm always picks tasks of users who are offering more money for the service.</span>
+</p>
+
+<p><a name="bookmark33"></a><span class="font7">Next, we explain how the same algorithm can be implemented by using two different pattern classifiers. In this paper we consider only the Naive Bayes Classifier, and the Perceptron classifier <a
+		href="#bookmark34">[13]</a>. Theoretically, any linear classifier could be used for classifying jobs. However, we discuss these two based on their ease of implementation, and the ability of learning from one sample at a time (online learning). Online learning helps in keeping memory used by the classifiers constant w.r.t the number of feature vectors. This is essential in our case; efficiency is an important goal for a scheduler implementation.</span>
+</p>
+
+<p><span class="font5" style="font-style:italic;">C. Using a Naive Bayes Classifier </span><span class="font7">If we apply Bayes theorem to equation<a
+		href="#bookmark31"> 1 </a>mentioned in the beginning of this section, we get,</span></p>
+<img
+		src="learning-scheduler_files/learning-scheduler-5.png" style="width:245pt;height:45pt;"/>
+
+<p><span class="font7">The denominator in the above equation can be treated as a constant as its value is independent of the jobs, and thus its calculation can be skipped during comparison.</span>
+</p>
+
+<p><span class="font7">We calculate both P(</span><span class="font4"
+																												style="font-style:italic;font-variant:small-caps;">t<sub>j</sub></span><span
+		class="font3"></sub> </span><span class="font7">= good|Fi, F<sub>2</sub>,...,F<sub>n</sub>) and </span><span
+		class="font4" style="font-style:italic;font-variant:small-caps;">P(tj </span><span class="font5"
+																																											 style="font-style:italic;">=</span><span
+		class="font7"> bad|Fi, F<sub>2</sub>,..., F<sub>n</sub>). Job is labeled as </span><span class="font5"
+																																														 style="font-style:italic;">good</span><span
+		class="font7"> or </span><span class="font5" style="font-style:italic;">bad </span><span class="font7">depending on which of the two probabilities is higher. Under the assumption of Naive Bayes conditional independence we get,</span>
+</p>
+
+<p><span class="font6"><img src="learning-scheduler_files/learning-scheduler-6.png"
+														style="width:238pt;height:28pt;"/></span></p>
+
+<p><span
+		class="font7">Thus, we compute the following quantity for all the jobs and select the job that maximizes it.</span>
+</p>
+
+<p><span class="font6"><img src="learning-scheduler_files/learning-scheduler-7.png"
+														style="width:232pt;height:34pt;"/></span></p>
+
+<p><span class="font7">Once the effects of a task assignments are observed, the probabilities are updated accordingly so that future decisions could benefit from the lessons learnt from the effects of current decisions.</span>
+</p>
+
+<p><span class="font7">Here we assume that the probabilities of all feature variables are conditionally independent of each other. This may not always be true. However, we observed that this assumption can yield a much simpler implementation. Despite the assumption, Naive Bayes classifiers are known to perform well. Our results show that the assumption does not have any drastic undesired effects on the overall performance of the scheduler.</span>
+</p>
+
 <p><span class="font5" style="font-style:italic;">D. Using a Perceptron Classifier</span></p>
-<p><span class="font7">Using a perceptron classifier, a job in the scheduler’s queue is considered </span><span class="font5" style="font-style:italic;">good</span><span class="font7"> if the result of the classification function c, is one and </span><span class="font5" style="font-style:italic;">bad</span><span class="font7"> if the output is zero. Input to the classification function is the feature vector F.</span></p><img src="learning-scheduler_files/learning-scheduler-8.jpg" style="width:217pt;height:191pt;"/>
-<p><span class="font6">Here, </span><span class="font7" style="font-weight:bold;">F </span><span class="font6">is the feature vector comprising of feature variables described earlier in this section. </span><span class="font7" style="font-weight:bold;">W </span><span class="font6">is the vector of weights assigned to each connection in the perceptron. b is a constant term that does not depend on any feature vector. </span><span class="font7" style="font-weight:bold;">W.F </span><span class="font6">gives the dot product of the two vectors. If the product is greater than -b, the job is labeled as </span><span class="font5" style="font-style:italic;">good,</span><span class="font6"> otherwise it is labeled as </span><span class="font5" style="font-style:italic;">bad.</span><span class="font6"> Figure<a href="#bookmark33"> 4 </a>shows a perceptron classifier.</span></p>
-<p><span class="font6">Initially all the weight variables are set to zero. Based on the result of applying the overload rule (after the next heartbeat from the TaskTracker is received), the weights are updated as follows:<img src="learning-scheduler_files/learning-scheduler-9.png" style="width:139pt;height:25pt;"/></span></p>
-<p><span class="font6">for </span><span class="font5" style="font-style:italic;">j = 1..</span><span class="font6"> . n; n being the number of feature variables. </span><span class="font5" style="font-style:italic;">Wj </span><span class="font6">and </span><span class="font5" style="font-style:italic;">Fj</span><span class="font6"> are the corresponding elements of the weight vector and feature vector respectively. y gives the result after applying the overload rule to the state of TaskTracker, which is 1 if the TaskTracker is underloaded, and 0 if it is overloaded. The weights are updated only if the predicted class label (c(F)) is different from the desired class label (y). </span><span class="font5" style="font-style:italic;">a</span><span class="font6"> is the learning rate, which is set to one.</span></p>
-<p><span class="font5" style="font-style:italic;">E. Separability of feature vector space and classifier convergence</span></p>
-<p><span class="font6">Naive Bayes classifiers assume that all feature variables are conditionally independent of each other, and their probabilities could be calculated independently. This assumption is almost always incorrect in practice. However, Naive Bayes classifiers have been known to outperform other popular classifiers including decision trees and multilayer neural networks. Zhang <a href="#bookmark24">[24]</a> has discussed in detail about the unexpected efficiency of Naive Bayes classifiers.</span></p>
-<p><span class="font6">Convergence of a linear classifier such as a perceptron depends on the separability of feature vector space. For linearly separable classes, perceptron classifier is known to learn the class boundary within a finite number of iterations <a href="#bookmark34">[13]</a>. Here, we argue about the separability of vector space of the feature variables that we consider while making a classifier decision.</span></p>
-<p><a name="bookmark11"></a><span class="font6">All the feature variables used in our classifier indicate either </span><span class="font5" style="font-style:italic;">availability</span><span class="font6"> or </span><span class="font5" style="font-style:italic;">usage</span><span class="font6"> of computational resources at a given node. Clearly, more the availability of a resource, more is the likelihood of a task being completed without overloading the resource. For features which correspond to </span><span class="font5" style="font-style:italic;">usage</span><span class="font6"> of resources, such as the job features, the opposite is true. i.e., more the resource usage, more is the likelihood of task of that job overloading the node. Thus, we can say that for a given job, for every feature variable there exists a separating value on one side of which task of the job is likely to overload the node, and vice versa. The vector corresponding to all such separating values gives the hyperplane which separates the feature vectors into two classes, </span><span class="font5" style="font-style:italic;">good</span><span class="font6">, and </span><span class="font5" style="font-style:italic;">bad</span><span class="font6">.</span></p>
+
+<p><span class="font7">Using a perceptron classifier, a job in the scheduler’s queue is considered </span><span
+		class="font5" style="font-style:italic;">good</span><span class="font7"> if the result of the classification function c, is one and </span><span
+		class="font5" style="font-style:italic;">bad</span><span class="font7"> if the output is zero. Input to the classification function is the feature vector F.</span>
+</p>
+<img src="learning-scheduler_files/learning-scheduler-8.jpg" style="width:217pt;height:191pt;"/>
+
+<p><span class="font6">Here, </span><span class="font7" style="font-weight:bold;">F </span><span class="font6">is the feature vector comprising of feature variables described earlier in this section. </span><span
+		class="font7" style="font-weight:bold;">W </span><span class="font6">is the vector of weights assigned to each connection in the perceptron. b is a constant term that does not depend on any feature vector. </span><span
+		class="font7" style="font-weight:bold;">W.F </span><span class="font6">gives the dot product of the two vectors. If the product is greater than -b, the job is labeled as </span><span
+		class="font5" style="font-style:italic;">good,</span><span class="font6"> otherwise it is labeled as </span><span
+		class="font5" style="font-style:italic;">bad.</span><span class="font6"> Figure<a href="#bookmark33"> 4 </a>shows a perceptron classifier.</span>
+</p>
+
+<p><span class="font6">Initially all the weight variables are set to zero. Based on the result of applying the overload rule (after the next heartbeat from the TaskTracker is received), the weights are updated as follows:<img
+		src="learning-scheduler_files/learning-scheduler-9.png" style="width:139pt;height:25pt;"/></span></p>
+
+<p><span class="font6">for </span><span class="font5" style="font-style:italic;">j = 1..</span><span class="font6"> . n; n being the number of feature variables. </span><span
+		class="font5" style="font-style:italic;">Wj </span><span class="font6">and </span><span class="font5"
+																																														style="font-style:italic;">Fj</span><span
+		class="font6"> are the corresponding elements of the weight vector and feature vector respectively. y gives the result after applying the overload rule to the state of TaskTracker, which is 1 if the TaskTracker is underloaded, and 0 if it is overloaded. The weights are updated only if the predicted class label (c(F)) is different from the desired class label (y). </span><span
+		class="font5" style="font-style:italic;">a</span><span
+		class="font6"> is the learning rate, which is set to one.</span></p>
+
+<p><span class="font5"
+				 style="font-style:italic;">E. Separability of feature vector space and classifier convergence</span></p>
+
+<p><span class="font6">Naive Bayes classifiers assume that all feature variables are conditionally independent of each other, and their probabilities could be calculated independently. This assumption is almost always incorrect in practice. However, Naive Bayes classifiers have been known to outperform other popular classifiers including decision trees and multilayer neural networks. Zhang <a
+		href="#bookmark24">[24]</a> has discussed in detail about the unexpected efficiency of Naive Bayes classifiers.</span>
+</p>
+
+<p><span class="font6">Convergence of a linear classifier such as a perceptron depends on the separability of feature vector space. For linearly separable classes, perceptron classifier is known to learn the class boundary within a finite number of iterations <a
+		href="#bookmark34">[13]</a>. Here, we argue about the separability of vector space of the feature variables that we consider while making a classifier decision.</span>
+</p>
+
+<p><a name="bookmark11"></a><span class="font6">All the feature variables used in our classifier indicate either </span><span
+		class="font5" style="font-style:italic;">availability</span><span class="font6"> or </span><span class="font5"
+																																																		 style="font-style:italic;">usage</span><span
+		class="font6"> of computational resources at a given node. Clearly, more the availability of a resource, more is the likelihood of a task being completed without overloading the resource. For features which correspond to </span><span
+		class="font5" style="font-style:italic;">usage</span><span class="font6"> of resources, such as the job features, the opposite is true. i.e., more the resource usage, more is the likelihood of task of that job overloading the node. Thus, we can say that for a given job, for every feature variable there exists a separating value on one side of which task of the job is likely to overload the node, and vice versa. The vector corresponding to all such separating values gives the hyperplane which separates the feature vectors into two classes, </span><span
+		class="font5" style="font-style:italic;">good</span><span class="font6">, and </span><span class="font5"
+																																															 style="font-style:italic;">bad</span><span
+		class="font6">.</span></p>
+
 <p><span class="font6">V. EVALUATION AND RESULTS</span></p>
-<p><span class="font6">We now briefly discuss the implementation, and then explain the evaluation methodology and results of our experiments in this section.</span></p>
+
+<p><span class="font6">We now briefly discuss the implementation, and then explain the evaluation methodology and results of our experiments in this section.</span>
+</p>
+
 <p><span class="font7" style="font-style:italic;">A. &nbsp;&nbsp;&nbsp;Implementation Details</span></p>
-<p><span class="font7">We have implemented our algorithm for Hadoop version 0.20.0. Our scheduler uses the pluggable scheduling API introduced in Hadoop 0.19. The scheduler customizes </span><span class="font2">assignTasks </span><span class="font7">method of the</span></p>
+
+<p><span class="font7">We have implemented our algorithm for Hadoop version 0.20.0. Our scheduler uses the pluggable scheduling API introduced in Hadoop 0.19. The scheduler customizes </span><span
+		class="font2">assignTasks </span><span class="font7">method of the</span></p>
+
 <p><span class="font2">org.apahce.hadoop.mapred.TaskScheduler</span></p>
+
 <p><span class="font7">class.</span></p>
-<p><span class="font7">We used only the Naive Bayes classifier in our implementation. Naive Bayes classifier is better in online learning (learning from one sample at a time) and handling categorical feature variables compared to perceptron classifier. We used a simple histogram for counting probabilities of discrete features.</span></p>
-<p><span class="font7">Node Features are obtained from the heartbeat message. We extended the heartbeat protocol used in Hadoop to include node resources properties. Job Features are passed via a configuration parameter (leansched.jobstat.map and learnsched.jobstat.reduce) while launching a job. In absence of these parameters, mode of the values for each resource is considered as the respective job feature.</span></p>
-<p><span class="font7">At any point of time, we maintain at the most </span><span class="font2">k </span><span class="font7">decisions made by the classifier for each TaskTracker, where </span><span class="font2">k </span><span class="font7">is the number of tasks assigned in one heartbeat. During the evaluation we kept </span><span class="font7" style="font-style:italic;">k</span><span class="font7"> = 1. Once the decisions are evaluated by the overload rule, we persist them to disk so that they can be used in re-learning, or when the desired utilization level is changed by the user. A decision made for the current heartbeat is evaluated in the next heartbeat. This allows us to control the memory used by decisions. We disregard the </span><span class="font2">accpetNewTasks </span><span class="font7">flag in the heartbeat message, and consider a node for task assignment in every heartbeat.</span></p>
-<p><span class="font7">We allow users to implement their own utility functions by extending our API. Utility functions in the scheduler are pluggable and can be changed at runtime. We have implemented a constant utility function, and FIFO utility function. Users can also write their own overload rules by implementing the </span><span class="font2">DecisionEvaluator </span><span class="font7">interface.</span></p>
-<p><span class="font7" style="font-style:italic;">B. &nbsp;&nbsp;&nbsp;Evaluation Methodology and Workload description</span></p>
-<p><span class="font7">We used a cluster of eight nodes to evaluate our algorithm. One of the nodes was designated as the master node which ran HDFS and MapReduce masters (NameNode and JobTracker). The remaining seven nodes were worker nodes. All of the nodes had 4 CPUs (Intel Quad Core, 2.4 GHz), a single hard disk of capacity 250 GB, and 4 GB of RAM. The nodes were interconnected by an unmanaged gibabit Ethernet switch. All of the nodes had Ubuntu Linux (9.04, server edition) and SUN Java 1.6.0_13. We used Hadoop version 0.20.0 for this evaluation. The important Hadoop parameters and their values used in the experiments are described in Figure<a href="#bookmark35"> 5.</a> For rest of the parameters, we used Hadoop’s default values.</span></p>
-<p><span class="font7">We used </span><span class="font7" style="font-style:italic;">one minute</span><span class="font7"> CPU load averages to decide overloading of resources. Load averages summarize both CPU and IO activity on a node. We calculated the ratio of reported load average with the number of available processors in a node. A value of 1 for this ratio indicates 100% utilization on a node.</span></p>
+
+<p><span class="font7">We used only the Naive Bayes classifier in our implementation. Naive Bayes classifier is better in online learning (learning from one sample at a time) and handling categorical feature variables compared to perceptron classifier. We used a simple histogram for counting probabilities of discrete features.</span>
+</p>
+
+<p><span class="font7">Node Features are obtained from the heartbeat message. We extended the heartbeat protocol used in Hadoop to include node resources properties. Job Features are passed via a configuration parameter (leansched.jobstat.map and learnsched.jobstat.reduce) while launching a job. In absence of these parameters, mode of the values for each resource is considered as the respective job feature.</span>
+</p>
+
+<p><span class="font7">At any point of time, we maintain at the most </span><span class="font2">k </span><span
+		class="font7">decisions made by the classifier for each TaskTracker, where </span><span class="font2">k </span><span
+		class="font7">is the number of tasks assigned in one heartbeat. During the evaluation we kept </span><span
+		class="font7" style="font-style:italic;">k</span><span class="font7"> = 1. Once the decisions are evaluated by the overload rule, we persist them to disk so that they can be used in re-learning, or when the desired utilization level is changed by the user. A decision made for the current heartbeat is evaluated in the next heartbeat. This allows us to control the memory used by decisions. We disregard the </span><span
+		class="font2">accpetNewTasks </span><span class="font7">flag in the heartbeat message, and consider a node for task assignment in every heartbeat.</span>
+</p>
+
+<p><span class="font7">We allow users to implement their own utility functions by extending our API. Utility functions in the scheduler are pluggable and can be changed at runtime. We have implemented a constant utility function, and FIFO utility function. Users can also write their own overload rules by implementing the </span><span
+		class="font2">DecisionEvaluator </span><span class="font7">interface.</span></p>
+
+<p><span class="font7"
+				 style="font-style:italic;">B. &nbsp;&nbsp;&nbsp;Evaluation Methodology and Workload description</span></p>
+
+<p><span class="font7">We used a cluster of eight nodes to evaluate our algorithm. One of the nodes was designated as the master node which ran HDFS and MapReduce masters (NameNode and JobTracker). The remaining seven nodes were worker nodes. All of the nodes had 4 CPUs (Intel Quad Core, 2.4 GHz), a single hard disk of capacity 250 GB, and 4 GB of RAM. The nodes were interconnected by an unmanaged gibabit Ethernet switch. All of the nodes had Ubuntu Linux (9.04, server edition) and SUN Java 1.6.0_13. We used Hadoop version 0.20.0 for this evaluation. The important Hadoop parameters and their values used in the experiments are described in Figure<a
+		href="#bookmark35"> 5.</a> For rest of the parameters, we used Hadoop’s default values.</span></p>
+
+<p><span class="font7">We used </span><span class="font7" style="font-style:italic;">one minute</span><span
+		class="font7"> CPU load averages to decide overloading of resources. Load averages summarize both CPU and IO activity on a node. We calculated the ratio of reported load average with the number of available processors in a node. A value of 1 for this ratio indicates 100% utilization on a node.</span>
+</p>
+
 <p><span class="font6">A node was considered to be overloaded if the ratio crossed a user specified limit.</span></p>
-<p><span class="font6">We evaluated our scheduler using jobs that simulate real life workloads. In addition to the WordCount and Grep jobs used by Zaharia et. al. <a href="#bookmark7">[22]</a>, we also simulate jobs to represent typical usage scenarios of Hadoop. We collected Hadoop usage information from the Hadoop PoweredBy <a href="#bookmark3">[7]</a> page. This page lists case studies of over 75 organizations. We categorized the usages into seven main categories, text indexing, log processing, web crawling, data mining, machine learning, reporting, data storage and image processing. Figure<a href="#bookmark36"> 6 </a>summarizes the frequency of these use cases. The percentages represented in the figure are approximate. From this information, we conclude that Hadoop is being used in a wide range of scenarios, naturally creating diversity in the resource requirements of MapReduce jobs.</span></p><img src="learning-scheduler_files/learning-scheduler-10.jpg" style="width:196pt;height:140pt;"/>
-<p><a name="bookmark36"></a><span class="font6">Fig. 6: Prominent Use Cases for Hadoop. (percentages are approximate)</span></p>
-<p><span class="font6">We came up with the following set of jobs to evaluate our scheduler. We describe their functioning below:</span></p>
-<p><span class="font6">• &nbsp;&nbsp;&nbsp;TextWriter: Writes randomly generated text to HDFS. Text is generated from a large collection of English words.</span></p>
+
+<p><span class="font6">We evaluated our scheduler using jobs that simulate real life workloads. In addition to the WordCount and Grep jobs used by Zaharia et. al. <a
+		href="#bookmark7">[22]</a>, we also simulate jobs to represent typical usage scenarios of Hadoop. We collected Hadoop usage information from the Hadoop PoweredBy <a
+		href="#bookmark3">[7]</a> page. This page lists case studies of over 75 organizations. We categorized the usages into seven main categories, text indexing, log processing, web crawling, data mining, machine learning, reporting, data storage and image processing. Figure<a
+		href="#bookmark36"> 6 </a>summarizes the frequency of these use cases. The percentages represented in the figure are approximate. From this information, we conclude that Hadoop is being used in a wide range of scenarios, naturally creating diversity in the resource requirements of MapReduce jobs.</span>
+</p>
+<img src="learning-scheduler_files/learning-scheduler-10.jpg" style="width:196pt;height:140pt;"/>
+
+<p><a name="bookmark36"></a><span
+		class="font6">Fig. 6: Prominent Use Cases for Hadoop. (percentages are approximate)</span></p>
+
+<p><span class="font6">We came up with the following set of jobs to evaluate our scheduler. We describe their functioning below:</span>
+</p>
+
+<p><span class="font6">• &nbsp;&nbsp;&nbsp;TextWriter: Writes randomly generated text to HDFS. Text is generated from a large collection of English words.</span>
+</p>
+
 <p><span class="font6">• &nbsp;&nbsp;&nbsp;WordCount: Counts word frequencies from textual data.</span></p>
-<p><span class="font6">• &nbsp;&nbsp;&nbsp;WordCount with 10 ms delay: Exactly same as Word-Count, except that we add an additional sleep of 10 ms before processing every key-value pair.</span></p>
-<p><span class="font6">• &nbsp;&nbsp;&nbsp;URLGet: This job mimics behavior of the web page fetching component of a web crawler. It downloads a text file from a local server. The local server delays response for a random amount (normal distribution, </span><span class="font5" style="font-style:italic;">^ =</span><span class="font6"> 1.5s, </span><span class="font5" style="font-style:italic;">a = </span><span class="font6">0.5s) of time to simulate internet latency. The text files we generated had sizes according to normal distribution</span></p>
+
+<p><span class="font6">• &nbsp;&nbsp;&nbsp;WordCount with 10 ms delay: Exactly same as Word-Count, except that we add an additional sleep of 10 ms before processing every key-value pair.</span>
+</p>
+
+<p><span class="font6">• &nbsp;&nbsp;&nbsp;URLGet: This job mimics behavior of the web page fetching component of a web crawler. It downloads a text file from a local server. The local server delays response for a random amount (normal distribution, </span><span
+		class="font5" style="font-style:italic;">^ =</span><span class="font6"> 1.5s, </span><span class="font5"
+																																															 style="font-style:italic;">a = </span><span
+		class="font6">0.5s) of time to simulate internet latency. The text files we generated had sizes according to normal distribution</span>
+</p>
 <table border="1">
-<tr><td>
-<p><span class="font4">Job</span></p></td><td>
-<p><span class="font4">CPU</span></p></td><td>
-<p><span class="font4">Memory</span></p></td><td>
-<p><span class="font4">Disk</span></p></td><td>
-<p><span class="font4">Network</span></p></td></tr>
-<tr><td>
-<p><span class="font4">TextWriter</span></p></td><td>
-<p><span class="font4">3</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">3</span></p></td></tr>
-<tr><td>
-<p><span class="font4">WordCount</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">6</span></p></td><td>
-<p><span class="font4">8</span></p></td><td>
-<p><span class="font4">5</span></p></td></tr>
-<tr><td>
-<p><span class="font4">WordCount+10ms delay</span></p></td><td>
-<p><span class="font4">1</span></p></td><td>
-<p><span class="font4">6</span></p></td><td>
-<p><span class="font4">6</span></p></td><td>
-<p><span class="font4">4</span></p></td></tr>
-<tr><td>
-<p><span class="font4">URLGet</span></p></td><td>
-<p><span class="font4">3</span></p></td><td>
-<p><span class="font4">4</span></p></td><td>
-<p><span class="font4">6</span></p></td><td>
-<p><span class="font4">7</span></p></td></tr>
-<tr><td>
-<p><span class="font4">URLToDisk</span></p></td><td>
-<p><span class="font4">3</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">7</span></p></td><td>
-<p><span class="font4">8</span></p></td></tr>
-<tr><td>
-<p><a name="bookmark37"></a><span class="font4">CpuActivity</span></p></td><td>
-<p><span class="font4">10</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">3</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font4">Job</span></p>
+		</td>
+		<td>
+			<p><span class="font4">CPU</span></p>
+		</td>
+		<td>
+			<p><span class="font4">Memory</span></p>
+		</td>
+		<td>
+			<p><span class="font4">Disk</span></p>
+		</td>
+		<td>
+			<p><span class="font4">Network</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">TextWriter</span></p>
+		</td>
+		<td>
+			<p><span class="font4">3</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">3</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">WordCount</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">6</span></p>
+		</td>
+		<td>
+			<p><span class="font4">8</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">WordCount+10ms delay</span></p>
+		</td>
+		<td>
+			<p><span class="font4">1</span></p>
+		</td>
+		<td>
+			<p><span class="font4">6</span></p>
+		</td>
+		<td>
+			<p><span class="font4">6</span></p>
+		</td>
+		<td>
+			<p><span class="font4">4</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">URLGet</span></p>
+		</td>
+		<td>
+			<p><span class="font4">3</span></p>
+		</td>
+		<td>
+			<p><span class="font4">4</span></p>
+		</td>
+		<td>
+			<p><span class="font4">6</span></p>
+		</td>
+		<td>
+			<p><span class="font4">7</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">URLToDisk</span></p>
+		</td>
+		<td>
+			<p><span class="font4">3</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">7</span></p>
+		</td>
+		<td>
+			<p><span class="font4">8</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><a name="bookmark37"></a><span class="font4">CpuActivity</span></p>
+		</td>
+		<td>
+			<p><span class="font4">10</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">3</span></p>
+		</td>
+	</tr>
 </table>
-<p><span class="font6">Fig. 7: Resource usage of evaluation jobs as estimated on the scale of 10, a value of 1 indicates minimum usage</span></p><div>
-<p><span class="font6">with mean of 300 KB, and variance of 50 KB <a href="#bookmark38">[17]</a>. URLToDisk: Downloads large video files(200MB) from a local web server and saves them to disk.</span></p>
-<p><span class="font6">CPUActivity: Carries out a computationally expensive numerical calculation for every key-value pair in the input.</span></p></div><br clear="all"/><div>
-<table border="1">
-<tr><td>
-<p><span class="font6" style="font-weight:bold;">Hadoop Parameter</span></p></td><td>
-<p><span class="font6" style="font-weight:bold;">Value</span></p></td></tr>
-<tr><td>
-<p><span class="font6">Replication</span></p></td><td>
-<p><span class="font6">3</span></p></td></tr>
-<tr><td>
-<p><span class="font6">HDFS Block size</span></p></td><td>
-<p><span class="font6">64 MB</span></p></td></tr>
-<tr><td>
-<p><span class="font6">Speculative Execution</span></p></td><td>
-<p><span class="font6">Enabled</span></p></td></tr>
-<tr><td>
-<p><span class="font6">Heartbeat interval</span></p></td><td>
-<p><span class="font6">5 seconds</span></p></td></tr>
-</table>
-<p><a name="bookmark35"></a><span class="font6">Fig. 5: Hadoop settings used in evaluation</span></p></div><br clear="all"/>
-<p><span class="font6">We estimated the resource usages of the each job profile thus created on a scale of 10 based on empirical observations for each computational resource. These values are shown in Figure <a href="#bookmark37">7.</a> A value of 10 for a resource means maximum resource usage. These estimates were passed to the scheduler as </span><span class="font5" style="font-style:italic;">Job Features</span><span class="font6"> as discussed in Section<a href="#bookmark30"> IV-A.</a> It should be noted that the approximate usage estimates could be replaced by actual estimates if such information is available. Our algorithm will work in both cases, provided the estimates are mapped properly to actual resource usages.</span></p>
-<p><span class="font6">During each run of a job the input was created afresh, and deleted after the job was completed using the RandomTextWriter job in Hadoop. The job generated 10 GB of text from words randomly chosen from a large collection of English words.</span></p>
+<p><span class="font6">Fig. 7: Resource usage of evaluation jobs as estimated on the scale of 10, a value of 1 indicates minimum usage</span>
+</p>
+
+<div>
+	<p><span class="font6">with mean of 300 KB, and variance of 50 KB <a href="#bookmark38">[17]</a>. URLToDisk: Downloads large video files(200MB) from a local web server and saves them to disk.</span>
+	</p>
+
+	<p><span class="font6">CPUActivity: Carries out a computationally expensive numerical calculation for every key-value pair in the input.</span>
+	</p>
+</div>
+<br clear="all"/>
+
+<div>
+	<table border="1">
+		<tr>
+			<td>
+				<p><span class="font6" style="font-weight:bold;">Hadoop Parameter</span></p>
+			</td>
+			<td>
+				<p><span class="font6" style="font-weight:bold;">Value</span></p>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<p><span class="font6">Replication</span></p>
+			</td>
+			<td>
+				<p><span class="font6">3</span></p>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<p><span class="font6">HDFS Block size</span></p>
+			</td>
+			<td>
+				<p><span class="font6">64 MB</span></p>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<p><span class="font6">Speculative Execution</span></p>
+			</td>
+			<td>
+				<p><span class="font6">Enabled</span></p>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<p><span class="font6">Heartbeat interval</span></p>
+			</td>
+			<td>
+				<p><span class="font6">5 seconds</span></p>
+			</td>
+		</tr>
+	</table>
+	<p><a name="bookmark35"></a><span class="font6">Fig. 5: Hadoop settings used in evaluation</span></p>
+</div>
+<br clear="all"/>
+
+<p><span class="font6">We estimated the resource usages of the each job profile thus created on a scale of 10 based on empirical observations for each computational resource. These values are shown in Figure <a
+		href="#bookmark37">7.</a> A value of 10 for a resource means maximum resource usage. These estimates were passed to the scheduler as </span><span
+		class="font5" style="font-style:italic;">Job Features</span><span class="font6"> as discussed in Section<a
+		href="#bookmark30"> IV-A.</a> It should be noted that the approximate usage estimates could be replaced by actual estimates if such information is available. Our algorithm will work in both cases, provided the estimates are mapped properly to actual resource usages.</span>
+</p>
+
+<p><span class="font6">During each run of a job the input was created afresh, and deleted after the job was completed using the RandomTextWriter job in Hadoop. The job generated 10 GB of text from words randomly chosen from a large collection of English words.</span>
+</p>
+
 <p><span class="font5" style="font-style:italic;">C. Results</span></p>
-<p><span class="font6">We first demonstrate the learning behavior of the scheduler. In this experiment we ran the WordCount MapReduce job provided in Hadoop. The job was run several times on randomly generated text of size 70 GB. The input was regenerated before each run of the job. Figure<a href="#bookmark39"> 8a </a>shows the average load on one of the worker nodes during this period.</span></p>
-<p><span class="font6">The scheduler was asked to maintain utilization at 100%. Initially the utilization was lower than expected during the ‘learning phase’ of the scheduler. After that however, the nodes were rarely overloaded, and achieved utilization very close(approx. 96%) to the desired value(100%). Another interesting observation is that the intensity of ‘peaks’ in the load reduces with time, thus confirming that the scheduler is indeed learning.</span></p>
-<p><span class="font6">Figure<a href="#bookmark40"> 8b </a>shows the reduction in the runtime of WordCount during this period. We report only the first six runs, since after that the runtime converged to around 36 minutes. The scheduler converges in the first few runs of the job, with the greatest reduction between the first two runs. The large runtime of the first run is due to the underutilization during the learning phase of the scheduler. We would like to point out that for larger jobs, i.e. for jobs with more number of Map tasks, the scheduler would converge even quickly.</span></p><img src="learning-scheduler_files/learning-scheduler-11.jpg" style="width:219pt;height:358pt;"/>
-<p><a name="bookmark39"></a><span class="font6"><a name="bookmark40"></a><a name="bookmark41"></a>Fig. 8: Learning behavior of the scheduler for WordCount job</span></p>
-<p><a name="bookmark42"></a><span class="font6">Next, we evaluated whether the scheduler is able to achieve user specified utilization. For this experiment we used Tex-tWriter, WordCount and Grep jobs. A constant utility function was used to make sure that all the jobs had equal priority. During each run, we first ran the TextWriter job to create input before running WordCount and Grep. We changed the desired utilization ratio (ratio of 1 means maintaining 100% utilization, which in turn means maintaining load average of 4 on a quad core machine) from 1 to 4 in steps of 0.5.</span></p>
-<p><span class="font6">Figure<a href="#bookmark41"> 9 </a>shows the observed behavior of the scheduler. The figure shows mean load averages and variations in a single run. The values reported are averaged over ten experiments. As is shown in the figure, the achieved load average is quite close to the desired load average (4 times x). The relatively large variation in the values can be attributed to the initial underutilization during the learning phase of the scheduler. For higher values of desired utilization ratio, the gap between desired and achieved load averages increases. This is because it is difficult to maintain work at higher utilization, as we can assign a task only every 5 seconds (heartbeat interval).</span></p>
-<p><span class="font6">We have deliberately included the learning phase of the scheduler in our evaluations, for comparing the scheduler fairly</span></p><img src="learning-scheduler_files/learning-scheduler-12.jpg" style="width:228pt;height:168pt;"/>
+
+<p><span class="font6">We first demonstrate the learning behavior of the scheduler. In this experiment we ran the WordCount MapReduce job provided in Hadoop. The job was run several times on randomly generated text of size 70 GB. The input was regenerated before each run of the job. Figure<a
+		href="#bookmark39"> 8a </a>shows the average load on one of the worker nodes during this period.</span></p>
+
+<p><span class="font6">The scheduler was asked to maintain utilization at 100%. Initially the utilization was lower than expected during the ‘learning phase’ of the scheduler. After that however, the nodes were rarely overloaded, and achieved utilization very close(approx. 96%) to the desired value(100%). Another interesting observation is that the intensity of ‘peaks’ in the load reduces with time, thus confirming that the scheduler is indeed learning.</span>
+</p>
+
+<p><span class="font6">Figure<a href="#bookmark40"> 8b </a>shows the reduction in the runtime of WordCount during this period. We report only the first six runs, since after that the runtime converged to around 36 minutes. The scheduler converges in the first few runs of the job, with the greatest reduction between the first two runs. The large runtime of the first run is due to the underutilization during the learning phase of the scheduler. We would like to point out that for larger jobs, i.e. for jobs with more number of Map tasks, the scheduler would converge even quickly.</span>
+</p>
+<img src="learning-scheduler_files/learning-scheduler-11.jpg" style="width:219pt;height:358pt;"/>
+
+<p><a name="bookmark39"></a><span class="font6"><a name="bookmark40"></a><a name="bookmark41"></a>Fig. 8: Learning behavior of the scheduler for WordCount job</span>
+</p>
+
+<p><a name="bookmark42"></a><span class="font6">Next, we evaluated whether the scheduler is able to achieve user specified utilization. For this experiment we used Tex-tWriter, WordCount and Grep jobs. A constant utility function was used to make sure that all the jobs had equal priority. During each run, we first ran the TextWriter job to create input before running WordCount and Grep. We changed the desired utilization ratio (ratio of 1 means maintaining 100% utilization, which in turn means maintaining load average of 4 on a quad core machine) from 1 to 4 in steps of 0.5.</span>
+</p>
+
+<p><span class="font6">Figure<a href="#bookmark41"> 9 </a>shows the observed behavior of the scheduler. The figure shows mean load averages and variations in a single run. The values reported are averaged over ten experiments. As is shown in the figure, the achieved load average is quite close to the desired load average (4 times x). The relatively large variation in the values can be attributed to the initial underutilization during the learning phase of the scheduler. For higher values of desired utilization ratio, the gap between desired and achieved load averages increases. This is because it is difficult to maintain work at higher utilization, as we can assign a task only every 5 seconds (heartbeat interval).</span>
+</p>
+
+<p><span class="font6">We have deliberately included the learning phase of the scheduler in our evaluations, for comparing the scheduler fairly</span>
+</p>
+<img src="learning-scheduler_files/learning-scheduler-12.jpg" style="width:228pt;height:168pt;"/>
+
 <p><a name="bookmark41"></a><span class="font7">Fig. 9: Achieved utilization for different user requirements</span></p>
-<p><span class="font7">with Hadoop's default scheduler, as the default scheduler does not involve any learning phase.</span></p><img src="learning-scheduler_files/learning-scheduler-13.jpg" style="width:222pt;height:169pt;"/>
+
+<p><span
+		class="font7">with Hadoop's default scheduler, as the default scheduler does not involve any learning phase.</span>
+</p>
+<img src="learning-scheduler_files/learning-scheduler-13.jpg" style="width:222pt;height:169pt;"/>
+
 <p><a name="bookmark42"></a><span class="font7">Fig. 10: Classifier accuracy for URLGet and CPUActivity</span></p>
-<p><span class="font7">Next, we compare the learning rates of two jobs, URLGet and CPUActivity. URLGet is a network intensive job, whereas CPUActivity is CPU intensive. We report accuracy of the decisions made by the classifier in Figure<a href="#bookmark42"> 10.</a> We consider a decision to be accurate if it is validated by the overload rule. For example, a decision to allocate a task is accurate if the overload rule determines that the allocation did not cause any overload. We report percentage accuracy per 250 decisions made by the classifier. The accuracy for both the jobs increases, which is expected as the scheduler is learning about the impact of both jobs on utilization. However, the rate of increase in URLGet is much smaller compared to CPUActivity. This could be because of the delayed response by local servers in case of URLGet. As the request from local server is delayed, URLGet tends to block for network I/O for rather unpredictable duration. CPUActivity on the other hand tends to be more predictable, and hence classifier accuracy for CPUActivity improves faster. Another point to note is that achieving 100% accuracy is not that important as long </span><span class="font6">as the scheduler is able to maintain utilization level specified by the user. Also, achieving 100% accuracy could be difficult, because of uncertainty involved in factors such as utilization contributed by DataNode processes, network traffic, age of resource information <a href="#bookmark43">[18]</a>, and finally errors in estimating resource requirements of jobs.</span></p>
-<p><span class="font6">We now present the last set of our experiments in which we compared our scheduler against Hadoop’s native scheduler described in Section<a href="#bookmark25"> III.</a> For these experiments, we used the workload as described in Section<a href="#bookmark11"> V.</a> Again, we used a constant utility function. We did not use any policy scheme (as described in Section<a href="#bookmark32"> IV-B)</a>, as our goal was to demonstrate that our scheduler does better task assignment than Hadoop’s native scheduler. We do not compare our scheduler with other Hadoop schedulers because the number of tasks assigned by them would be the same as that by the default scheduler because of reasons discussed in Section<a href="#bookmark25"> III.</a> Each of the jobs was run in isolation. Input was regenerated before every new run of a job.</span></p>
-<p><span class="font6">We set the maximum number of concurrent tasks to 5 (4CPUs + 1 disk). This was done to make sure that each task always had access to a disk or a CPU. This setting does not apply to the learning scheduler. Note that this is larger than the default Hadoop setting, where only two tasks are allowed to run concurrently on a machine.</span></p>
+
+<p><span class="font7">Next, we compare the learning rates of two jobs, URLGet and CPUActivity. URLGet is a network intensive job, whereas CPUActivity is CPU intensive. We report accuracy of the decisions made by the classifier in Figure<a
+		href="#bookmark42"> 10.</a> We consider a decision to be accurate if it is validated by the overload rule. For example, a decision to allocate a task is accurate if the overload rule determines that the allocation did not cause any overload. We report percentage accuracy per 250 decisions made by the classifier. The accuracy for both the jobs increases, which is expected as the scheduler is learning about the impact of both jobs on utilization. However, the rate of increase in URLGet is much smaller compared to CPUActivity. This could be because of the delayed response by local servers in case of URLGet. As the request from local server is delayed, URLGet tends to block for network I/O for rather unpredictable duration. CPUActivity on the other hand tends to be more predictable, and hence classifier accuracy for CPUActivity improves faster. Another point to note is that achieving 100% accuracy is not that important as long </span><span
+		class="font6">as the scheduler is able to maintain utilization level specified by the user. Also, achieving 100% accuracy could be difficult, because of uncertainty involved in factors such as utilization contributed by DataNode processes, network traffic, age of resource information <a
+		href="#bookmark43">[18]</a>, and finally errors in estimating resource requirements of jobs.</span></p>
+
+<p><span class="font6">We now present the last set of our experiments in which we compared our scheduler against Hadoop’s native scheduler described in Section<a
+		href="#bookmark25"> III.</a> For these experiments, we used the workload as described in Section<a
+		href="#bookmark11"> V.</a> Again, we used a constant utility function. We did not use any policy scheme (as described in Section<a
+		href="#bookmark32"> IV-B)</a>, as our goal was to demonstrate that our scheduler does better task assignment than Hadoop’s native scheduler. We do not compare our scheduler with other Hadoop schedulers because the number of tasks assigned by them would be the same as that by the default scheduler because of reasons discussed in Section<a
+		href="#bookmark25"> III.</a> Each of the jobs was run in isolation. Input was regenerated before every new run of a job.</span>
+</p>
+
+<p><span class="font6">We set the maximum number of concurrent tasks to 5 (4CPUs + 1 disk). This was done to make sure that each task always had access to a disk or a CPU. This setting does not apply to the learning scheduler. Note that this is larger than the default Hadoop setting, where only two tasks are allowed to run concurrently on a machine.</span>
+</p>
 <table border="1">
-<tr><td>
-<p><span class="font4">Job</span></p></td><td>
-<p><span class="font4">Learning</span></p>
-<p><span class="font4">Scheduler</span></p></td><td>
-<p><span class="font4">Hadoop</span></p>
-<p><span class="font4">native</span></p></td><td>
-<p><span class="font4">Runtime compared to Hadoop</span></p></td></tr>
-<tr><td>
-<p><span class="font4">TextWriter</span></p></td><td>
-<p><span class="font4">2.03</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">2.5x</span></p></td></tr>
-<tr><td>
-<p><span class="font4">WordCount</span></p></td><td>
-<p><span class="font4">2.31</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">2x</span></p></td></tr>
-<tr><td>
-<p><span class="font4">WordCount + 10ms delay</span></p></td><td>
-<p><span class="font4">10.52</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">0.4x</span></p></td></tr>
-<tr><td>
-<p><span class="font4">URLGet</span></p></td><td>
-<p><span class="font4">8.35</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">0.6x</span></p></td></tr>
-<tr><td>
-<p><span class="font4">URLToDisk</span></p></td><td>
-<p><span class="font4">5.09</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">1x</span></p></td></tr>
-<tr><td>
-<p><a name="bookmark44"></a><span class="font4">CPUActivity</span></p></td><td>
-<p><span class="font4">3.17</span></p></td><td>
-<p><span class="font4">5</span></p></td><td>
-<p><span class="font4">1.5x</span></p></td></tr>
+	<tr>
+		<td>
+			<p><span class="font4">Job</span></p>
+		</td>
+		<td>
+			<p><span class="font4">Learning</span></p>
+
+			<p><span class="font4">Scheduler</span></p>
+		</td>
+		<td>
+			<p><span class="font4">Hadoop</span></p>
+
+			<p><span class="font4">native</span></p>
+		</td>
+		<td>
+			<p><span class="font4">Runtime compared to Hadoop</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">TextWriter</span></p>
+		</td>
+		<td>
+			<p><span class="font4">2.03</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">2.5x</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">WordCount</span></p>
+		</td>
+		<td>
+			<p><span class="font4">2.31</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">2x</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">WordCount + 10ms delay</span></p>
+		</td>
+		<td>
+			<p><span class="font4">10.52</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">0.4x</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">URLGet</span></p>
+		</td>
+		<td>
+			<p><span class="font4">8.35</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">0.6x</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><span class="font4">URLToDisk</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5.09</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">1x</span></p>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<p><a name="bookmark44"></a><span class="font4">CPUActivity</span></p>
+		</td>
+		<td>
+			<p><span class="font4">3.17</span></p>
+		</td>
+		<td>
+			<p><span class="font4">5</span></p>
+		</td>
+		<td>
+			<p><span class="font4">1.5x</span></p>
+		</td>
+	</tr>
 </table>
-<p><span class="font6">Fig. 11: Comparison of task assignment by Learning Scheduler and Hadoop’s native scheduler</span></p>
-<p><span class="font6">Figure<a href="#bookmark44"> 11 </a>shows the mean number of tasks assigned during each run by our scheduler and Hadoop’s default scheduler. The values are averages calculated over 10 experiment runs. Our scheduler allocated tasks in order to maintain utilization of 100%. Job runtime is proportional to the number of tasks assigned by learning scheduler and Hadoop default, as we made sure that each of the task would take 60 seconds to complete. As can be seen from the table, Hadoop’s scheduler achieved better runtime in TextWriter, WordCount and CPUAcitivity jobs. However, it should be noted that in all these cases, Hadoop’s task assignment policy resulted in overload at the worker machines due to excessive task assignment. Since our scheduler assigns tasks by considering utilization, shorter runtime could be easily achieved if the utilization target given to the scheduler is increased. For WordCount with 10 ms delay, URLGet and URLToDisk the learning scheduler achieved significantly shorter runtime than the comparison. This is because, Hadoop allocated only fixed number of tasks, whereas our scheduler could allocate more tasks as each task was less demanding. The biggest improvement is seen in</span></p>
-<p><span class="font6">WordCount with 10 ms delay. For these jobs, in the case of default Hadoop scheduler, the cluster was underutilized.</span></p>
-<p><a name="bookmark12"></a><span class="font6">In the next section we conclude our discussion by mentioning key lessons learnt and directions of further research.</span></p>
+<p><span class="font6">Fig. 11: Comparison of task assignment by Learning Scheduler and Hadoop’s native scheduler</span>
+</p>
+
+<p><span class="font6">Figure<a href="#bookmark44"> 11 </a>shows the mean number of tasks assigned during each run by our scheduler and Hadoop’s default scheduler. The values are averages calculated over 10 experiment runs. Our scheduler allocated tasks in order to maintain utilization of 100%. Job runtime is proportional to the number of tasks assigned by learning scheduler and Hadoop default, as we made sure that each of the task would take 60 seconds to complete. As can be seen from the table, Hadoop’s scheduler achieved better runtime in TextWriter, WordCount and CPUAcitivity jobs. However, it should be noted that in all these cases, Hadoop’s task assignment policy resulted in overload at the worker machines due to excessive task assignment. Since our scheduler assigns tasks by considering utilization, shorter runtime could be easily achieved if the utilization target given to the scheduler is increased. For WordCount with 10 ms delay, URLGet and URLToDisk the learning scheduler achieved significantly shorter runtime than the comparison. This is because, Hadoop allocated only fixed number of tasks, whereas our scheduler could allocate more tasks as each task was less demanding. The biggest improvement is seen in</span>
+</p>
+
+<p><span class="font6">WordCount with 10 ms delay. For these jobs, in the case of default Hadoop scheduler, the cluster was underutilized.</span>
+</p>
+
+<p><a name="bookmark12"></a><span class="font6">In the next section we conclude our discussion by mentioning key lessons learnt and directions of further research.</span>
+</p>
+
 <p><span class="font6" style="font-variant:small-caps;">VI. Conclusions and Future work</span></p>
-<p><span class="font6">We presented a new algorithm for task assignment using machine learning. Our work shows that learning based techniques can be effectively used in tackling distributed resource management. A key property of our scheduler was continuous learning and adaptation for heterogeneous workloads. Despite the uncertainty involved in clusters, the scheduler was able to learn impact of different applications in their first few runs. We would like to point out that the jobs we used for evaluation were of rather modest sizes when compared to the real life MapReduce case studies. However, this is in fact beneficial to our algorithm as with large applications we have even better opportunity to build models on job performance data. For large applications the scheduler could learn the behavior in the first run itself.</span></p>
-<p><span class="font6">Once the scheduler stabilizes, we achieved much better performance than the default Hadoop scheduler. However, as the underutilization in the learning phase is a limitation specific to our algorithm and not the default scheduler, we have included it in our results.</span></p>
-<p><span class="font6">The key lessons learnt from our work are, that even simple learning based approaches such as the Naive Bayes classifier could be used in optimizing repetitive workloads. Another important lesson is that prediction based task assignment results in better utilization of cluster hardware.</span></p>
-<p><span class="font6">The algorithm we have presented is generic and can be applied to other resource management problems as well. For example the same approach could be used in solving admission control, where a controller has to selectively choose among incoming jobs. Speculative execution is also a problem where we would like to use this approach.</span></p>
-<p><span class="font6">In the future we would like to evaluate our scheduler in heterogeneous environments as well as in cloud computing environments such as the Amazon EC2. Incorporating features that indicate node stability, and predicting component failures is another interesting future direction.</span></p>
+
+<p><span class="font6">We presented a new algorithm for task assignment using machine learning. Our work shows that learning based techniques can be effectively used in tackling distributed resource management. A key property of our scheduler was continuous learning and adaptation for heterogeneous workloads. Despite the uncertainty involved in clusters, the scheduler was able to learn impact of different applications in their first few runs. We would like to point out that the jobs we used for evaluation were of rather modest sizes when compared to the real life MapReduce case studies. However, this is in fact beneficial to our algorithm as with large applications we have even better opportunity to build models on job performance data. For large applications the scheduler could learn the behavior in the first run itself.</span>
+</p>
+
+<p><span class="font6">Once the scheduler stabilizes, we achieved much better performance than the default Hadoop scheduler. However, as the underutilization in the learning phase is a limitation specific to our algorithm and not the default scheduler, we have included it in our results.</span>
+</p>
+
+<p><span class="font6">The key lessons learnt from our work are, that even simple learning based approaches such as the Naive Bayes classifier could be used in optimizing repetitive workloads. Another important lesson is that prediction based task assignment results in better utilization of cluster hardware.</span>
+</p>
+
+<p><span class="font6">The algorithm we have presented is generic and can be applied to other resource management problems as well. For example the same approach could be used in solving admission control, where a controller has to selectively choose among incoming jobs. Speculative execution is also a problem where we would like to use this approach.</span>
+</p>
+
+<p><span class="font6">In the future we would like to evaluate our scheduler in heterogeneous environments as well as in cloud computing environments such as the Amazon EC2. Incorporating features that indicate node stability, and predicting component failures is another interesting future direction.</span>
+</p>
+
 <p><span class="font6" style="font-variant:small-caps;">References</span></p>
-<p><a name="bookmark2"></a><span class="font6"><a name="bookmark5"></a>[1] &nbsp;&nbsp;&nbsp;Amazon Elastic MapReduce.<a href="http://aws.amazon.com/elasticmapreduce/"> http://aws.amazon.com/elasticmapreduce/.</a></span></p>
-<p><a name="bookmark14"></a><span class="font6">[2] &nbsp;&nbsp;&nbsp;Apache Hadoop.<a href="http://hadoop.apache.org"> http://hadoop.apache.org.</a></span></p>
-<p><span class="font6">[3] &nbsp;&nbsp;&nbsp;Capacity Scheduler for Hadoop.<a href="http://hadoop.apache.org/common/docs/current/capacity_scheduler.html"> http://hadoop.apache.org/common/docs/</a> <a href="http://hadoop.apache.org/common/docs/current/capacity_scheduler.html">current/capacity_scheduler.html.</a></span></p>
-<p><a name="bookmark6"></a><span class="font6">[4] &nbsp;&nbsp;&nbsp;Cloudera Distribution for Hadoop on EC2.<a href="http://www.cloudera.com/hadoop-ec2"> http://www.cloudera.com/</a> <a href="http://www.cloudera.com/hadoop-ec2">hadoop-ec2.</a></span></p>
-<p><a name="bookmark15"></a><span class="font6">[5] &nbsp;&nbsp;&nbsp;Dynamic Priority Scheduler for Hadoop.<a href="http://issues.apache.org/jira/browse/HADOOP-4768"> http://issues.apache.org/jira/</a> <a href="http://issues.apache.org/jira/browse/HADOOP-4768">browse/HADOOP-4768.</a></span></p>
-<p><a name="bookmark16"></a><span class="font6">[6] &nbsp;&nbsp;&nbsp;Hadoop on Demand.<a href="http://hadoop.apache.org/common/docs/current/hod_user_guide.html"> http://hadoop.apache.org/common/docs/current/</a> <a href="http://hadoop.apache.org/common/docs/current/hod_user_guide.html">hod_user_guide.html.</a></span></p>
-<p><a name="bookmark3"></a><span class="font6"><a name="bookmark4"></a>[7] &nbsp;&nbsp;&nbsp;Hadoop PoweredBy.<a href="http://wiki.apache.org/hadoop/PoweredBy"> http://wiki.apache.org/hadoop/PoweredBy.</a></span></p>
-<p><span class="font6">[8] &nbsp;&nbsp;&nbsp;Scaling Hadoop to 4000 nodes at Yahoo!<a href="http://developer.yahoo.net/blogs/hadoop/2008/09/scaling_hadoop_to_4000_nodes_a.html"> http://developer.yahoo.net/</a> <a href="http://developer.yahoo.net/blogs/hadoop/2008/09/scaling_hadoop_to_4000_nodes_a.html">blogs/hadoop/2008/09/scaling_hadoop_to_4000_nodes_a.html.</a></span></p>
-<p><a name="bookmark17"></a><span class="font6">[9] &nbsp;&nbsp;&nbsp;Amy W. Apon, Thomas D. Wagner, and Lawrence W. Dowdy. A learning approach to processor allocation in parallel systems. In </span><span class="font5" style="font-style:italic;">CIKM '99: Proceedings of the eighth international conference on Information and knowledge management,</span><span class="font6"> pages 531-537, New York, NY, USA, 1999. ACM.</span></p>
-<p><a name="bookmark23"></a><span class="font6">[10] &nbsp;&nbsp;&nbsp;Z. Bin, L. Zhaohui, and W. Jun. Grid Scheduling Optimization Under Conditions of Uncertainty. </span><span class="font5" style="font-style:italic;">Lecture Notes in Computer Science,</span><span class="font6"> 4672:51, 2007.</span></p>
-<p><a name="bookmark27"></a><span class="font6">[11] &nbsp;&nbsp;&nbsp;J. Dean. Experiences with MapReduce, an abstraction for large-scale computation. In </span><span class="font5" style="font-style:italic;">International Conference on Parallel Architecture and Compilation Techniques</span><span class="font6">, 2006.</span></p>
-<p><a name="bookmark1"></a><span class="font6">[12] &nbsp;&nbsp;&nbsp;Jeffrey Dean and Sanjay Ghemawat. MapReduce: Simplified Data Processing on Large Clusters. In </span><span class="font5" style="font-style:italic;">Proceedings of the 6th Symposium on Operating Systems Design and Implementation,</span><span class="font6"> pages 137-150, 2004.</span></p>
-<p><a name="bookmark34"></a><span class="font6">[13] &nbsp;&nbsp;&nbsp;Richard O. Duda, Peter E. Hart, and David G. Stork. </span><span class="font5" style="font-style:italic;">Pattern Classification (2nd Edition).</span><span class="font6"> Wiley-Interscience, 2 edition, November 2000.</span></p>
-<p><a name="bookmark26"></a><span class="font6">[14] &nbsp;&nbsp;&nbsp;Sanjay Ghemawat, Howard Gobioff, and Shun-Tak Leung. The google file system. </span><span class="font5" style="font-style:italic;">SIGOPS Oper. Syst. Rev.,</span><span class="font6"> 37(5):29-43, 2003.</span></p>
-<p><a name="bookmark18"></a><span class="font6">[15] &nbsp;&nbsp;&nbsp;T. Kunz. The Learning Behaviour of a Scheduler using a Stochastic Learning Automation. Technical report, Citeseer.</span></p>
-<p><a name="bookmark19"></a><span class="font6">[16] &nbsp;&nbsp;&nbsp;T. Kunz. The influence of different workload descriptions on a heuristic load balancing scheme. </span><span class="font5" style="font-style:italic;">IEEE Transactions on Software Engineering</span><span class="font6">, 17(7):725-730, 1991.</span></p>
-<p><a name="bookmark38"></a><span class="font6">[17] &nbsp;&nbsp;&nbsp;Ryan Levering and Michal Cutler. The portrait of a common HTML web page. In </span><span class="font5" style="font-style:italic;">DocEng ’06: Proceedings of the 2006 ACM symposium on Document engineering,</span><span class="font6"> pages 198-204, New York, NY, USA, 2006. ACM.</span></p>
-<p><a name="bookmark43"></a><span class="font6">[18] &nbsp;&nbsp;&nbsp;Michael Mitzenmacher. How useful is old information? </span><span class="font5" style="font-style:italic;">IEEE Trans. Parallel Distrib. Syst.,</span><span class="font6"> 11(1):6-20, 2000.</span></p>
-<p><a name="bookmark20"></a><span class="font6">[19] &nbsp;&nbsp;&nbsp;A. Negi and K.P. Kishore. Applying machine learning techniques to improve linux process scheduling. In </span><span class="font5" style="font-style:italic;">TENCON 2005 2005 IEEE Region 10,</span><span class="font6"> pages 1-6, Nov. 2005.</span></p>
-<p><a name="bookmark21"></a><span class="font6">[20] &nbsp;&nbsp;&nbsp;L.P. Santos, D. de Informatica, and A. Proenca. A Bayesian runtime load manager on a shared cluster. In </span><span class="font5" style="font-style:italic;">First IEEE/ACM International Symposium on Cluster Computing and the Grid, 2001. Proceedings, </span><span class="font6">pages 674-679, 2001.</span></p>
-<p><a name="bookmark22"></a><span class="font6">[21] &nbsp;&nbsp;&nbsp;L.P. Santos and A. Proenca. Scheduling under conditions of uncertainty: a bayesian approach. </span><span class="font5" style="font-style:italic;">Lecture notes in computer science</span><span class="font6">, pages 222-229, 2004.</span></p>
-<p><a name="bookmark7"></a><span class="font6">[22] &nbsp;&nbsp;&nbsp;M. Zaharia, A. Konwinski, A.D. Joseph, R. Katz, and I. Stoica. Improving mapreduce performance in heterogeneous environments. In </span><span class="font5" style="font-style:italic;">Proc. of USENIX OSDI,</span><span class="font6"> 2008.</span></p>
-<p><a name="bookmark13"></a><span class="font6">[23] &nbsp;&nbsp;&nbsp;Matei Zaharia, Dhruba Borthakur, Joydeep Sen Sarma, Khaled Elmele-egy, Scott Shenker, and Ion Stoica. Job Scheduling for Multi-User MapReduce Clusters. Technical Report UCB/EECS-2009-55, EECS Department, University of California, Berkeley, Apr 2009.</span></p>
-<p><a name="bookmark24"></a><span class="font6">[24] &nbsp;&nbsp;&nbsp;Harry Zhang. The Optimality of Naive Bayes. In Valerie Barr and Zdravko Markov, editors, </span><span class="font5" style="font-style:italic;">FLAIRS Conference</span><span class="font6">. AAAI Press, 2004.</span></p>
+
+<p><a name="bookmark2"></a><span class="font6"><a name="bookmark5"></a>[1] &nbsp;&nbsp;&nbsp;Amazon Elastic MapReduce.<a
+		href="http://aws.amazon.com/elasticmapreduce/"> http://aws.amazon.com/elasticmapreduce/.</a></span></p>
+
+<p><a name="bookmark14"></a><span class="font6">[2] &nbsp;&nbsp;&nbsp;Apache Hadoop.<a href="http://hadoop.apache.org">
+	http://hadoop.apache.org.</a></span></p>
+
+<p><span class="font6">[3] &nbsp;&nbsp;&nbsp;Capacity Scheduler for Hadoop.<a
+		href="http://hadoop.apache.org/common/docs/current/capacity_scheduler.html">
+	http://hadoop.apache.org/common/docs/</a> <a
+		href="http://hadoop.apache.org/common/docs/current/capacity_scheduler.html">current/capacity_scheduler.html.</a></span>
+</p>
+
+<p><a name="bookmark6"></a><span class="font6">[4] &nbsp;&nbsp;&nbsp;Cloudera Distribution for Hadoop on EC2.<a
+		href="http://www.cloudera.com/hadoop-ec2"> http://www.cloudera.com/</a> <a
+		href="http://www.cloudera.com/hadoop-ec2">hadoop-ec2.</a></span></p>
+
+<p><a name="bookmark15"></a><span class="font6">[5] &nbsp;&nbsp;&nbsp;Dynamic Priority Scheduler for Hadoop.<a
+		href="http://issues.apache.org/jira/browse/HADOOP-4768"> http://issues.apache.org/jira/</a> <a
+		href="http://issues.apache.org/jira/browse/HADOOP-4768">browse/HADOOP-4768.</a></span></p>
+
+<p><a name="bookmark16"></a><span class="font6">[6] &nbsp;&nbsp;&nbsp;Hadoop on Demand.<a
+		href="http://hadoop.apache.org/common/docs/current/hod_user_guide.html">
+	http://hadoop.apache.org/common/docs/current/</a> <a
+		href="http://hadoop.apache.org/common/docs/current/hod_user_guide.html">hod_user_guide.html.</a></span></p>
+
+<p><a name="bookmark3"></a><span class="font6"><a name="bookmark4"></a>[7] &nbsp;&nbsp;&nbsp;Hadoop PoweredBy.<a
+		href="http://wiki.apache.org/hadoop/PoweredBy"> http://wiki.apache.org/hadoop/PoweredBy.</a></span></p>
+
+<p><span class="font6">[8] &nbsp;&nbsp;&nbsp;Scaling Hadoop to 4000 nodes at Yahoo!<a
+		href="http://developer.yahoo.net/blogs/hadoop/2008/09/scaling_hadoop_to_4000_nodes_a.html">
+	http://developer.yahoo.net/</a> <a
+		href="http://developer.yahoo.net/blogs/hadoop/2008/09/scaling_hadoop_to_4000_nodes_a.html">blogs/hadoop/2008/09/scaling_hadoop_to_4000_nodes_a.html.</a></span>
+</p>
+
+<p><a name="bookmark17"></a><span class="font6">[9] &nbsp;&nbsp;&nbsp;Amy W. Apon, Thomas D. Wagner, and Lawrence W. Dowdy. A learning approach to processor allocation in parallel systems. In </span><span
+		class="font5" style="font-style:italic;">CIKM '99: Proceedings of the eighth international conference on Information and knowledge management,</span><span
+		class="font6"> pages 531-537, New York, NY, USA, 1999. ACM.</span></p>
+
+<p><a name="bookmark23"></a><span class="font6">[10] &nbsp;&nbsp;&nbsp;Z. Bin, L. Zhaohui, and W. Jun. Grid Scheduling Optimization Under Conditions of Uncertainty. </span><span
+		class="font5" style="font-style:italic;">Lecture Notes in Computer Science,</span><span class="font6"> 4672:51, 2007.</span>
+</p>
+
+<p><a name="bookmark27"></a><span class="font6">[11] &nbsp;&nbsp;&nbsp;J. Dean. Experiences with MapReduce, an abstraction for large-scale computation. In </span><span
+		class="font5" style="font-style:italic;">International Conference on Parallel Architecture and Compilation Techniques</span><span
+		class="font6">, 2006.</span></p>
+
+<p><a name="bookmark1"></a><span class="font6">[12] &nbsp;&nbsp;&nbsp;Jeffrey Dean and Sanjay Ghemawat. MapReduce: Simplified Data Processing on Large Clusters. In </span><span
+		class="font5" style="font-style:italic;">Proceedings of the 6th Symposium on Operating Systems Design and Implementation,</span><span
+		class="font6"> pages 137-150, 2004.</span></p>
+
+<p><a name="bookmark34"></a><span class="font6">[13] &nbsp;&nbsp;&nbsp;Richard O. Duda, Peter E. Hart, and David G. Stork. </span><span
+		class="font5" style="font-style:italic;">Pattern Classification (2nd Edition).</span><span class="font6"> Wiley-Interscience, 2 edition, November 2000.</span>
+</p>
+
+<p><a name="bookmark26"></a><span class="font6">[14] &nbsp;&nbsp;&nbsp;Sanjay Ghemawat, Howard Gobioff, and Shun-Tak Leung. The google file system. </span><span
+		class="font5" style="font-style:italic;">SIGOPS Oper. Syst. Rev.,</span><span
+		class="font6"> 37(5):29-43, 2003.</span></p>
+
+<p><a name="bookmark18"></a><span class="font6">[15] &nbsp;&nbsp;&nbsp;T. Kunz. The Learning Behaviour of a Scheduler using a Stochastic Learning Automation. Technical report, Citeseer.</span>
+</p>
+
+<p><a name="bookmark19"></a><span class="font6">[16] &nbsp;&nbsp;&nbsp;T. Kunz. The influence of different workload descriptions on a heuristic load balancing scheme. </span><span
+		class="font5" style="font-style:italic;">IEEE Transactions on Software Engineering</span><span class="font6">, 17(7):725-730, 1991.</span>
+</p>
+
+<p><a name="bookmark38"></a><span class="font6">[17] &nbsp;&nbsp;&nbsp;Ryan Levering and Michal Cutler. The portrait of a common HTML web page. In </span><span
+		class="font5"
+		style="font-style:italic;">DocEng ’06: Proceedings of the 2006 ACM symposium on Document engineering,</span><span
+		class="font6"> pages 198-204, New York, NY, USA, 2006. ACM.</span></p>
+
+<p><a name="bookmark43"></a><span class="font6">[18] &nbsp;&nbsp;&nbsp;Michael Mitzenmacher. How useful is old information? </span><span
+		class="font5" style="font-style:italic;">IEEE Trans. Parallel Distrib. Syst.,</span><span class="font6"> 11(1):6-20, 2000.</span>
+</p>
+
+<p><a name="bookmark20"></a><span class="font6">[19] &nbsp;&nbsp;&nbsp;A. Negi and K.P. Kishore. Applying machine learning techniques to improve linux process scheduling. In </span><span
+		class="font5" style="font-style:italic;">TENCON 2005 2005 IEEE Region 10,</span><span class="font6"> pages 1-6, Nov. 2005.</span>
+</p>
+
+<p><a name="bookmark21"></a><span class="font6">[20] &nbsp;&nbsp;&nbsp;L.P. Santos, D. de Informatica, and A. Proenca. A Bayesian runtime load manager on a shared cluster. In </span><span
+		class="font5" style="font-style:italic;">First IEEE/ACM International Symposium on Cluster Computing and the Grid, 2001. Proceedings, </span><span
+		class="font6">pages 674-679, 2001.</span></p>
+
+<p><a name="bookmark22"></a><span class="font6">[21] &nbsp;&nbsp;&nbsp;L.P. Santos and A. Proenca. Scheduling under conditions of uncertainty: a bayesian approach. </span><span
+		class="font5" style="font-style:italic;">Lecture notes in computer science</span><span class="font6">, pages 222-229, 2004.</span>
+</p>
+
+<p><a name="bookmark7"></a><span class="font6">[22] &nbsp;&nbsp;&nbsp;M. Zaharia, A. Konwinski, A.D. Joseph, R. Katz, and I. Stoica. Improving mapreduce performance in heterogeneous environments. In </span><span
+		class="font5" style="font-style:italic;">Proc. of USENIX OSDI,</span><span class="font6"> 2008.</span></p>
+
+<p><a name="bookmark13"></a><span class="font6">[23] &nbsp;&nbsp;&nbsp;Matei Zaharia, Dhruba Borthakur, Joydeep Sen Sarma, Khaled Elmele-egy, Scott Shenker, and Ion Stoica. Job Scheduling for Multi-User MapReduce Clusters. Technical Report UCB/EECS-2009-55, EECS Department, University of California, Berkeley, Apr 2009.</span>
+</p>
+
+<p><a name="bookmark24"></a><span class="font6">[24] &nbsp;&nbsp;&nbsp;Harry Zhang. The Optimality of Naive Bayes. In Valerie Barr and Zdravko Markov, editors, </span><span
+		class="font5" style="font-style:italic;">FLAIRS Conference</span><span class="font6">. AAAI Press, 2004.</span>
+</p>
 </body>
 </html>
