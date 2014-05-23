@@ -1,1 +1,267 @@
-test
+<style>
+	.font0 {
+		font: 5pt Consolas, monospace;
+	}
+
+	.font1 {
+		font: 7pt Consolas, monospace;
+	}
+
+	.font8 {
+		font: 8pt Sylfaen, serif;
+	}
+
+</style>
+<h2 style="text-align: center">Основные концепции функционального программирования</h2>
+
+<p>Первым языком который использовал парадигмы функционального программирования был Lisp, который был разработан в конце
+	1950-х годов и являлся вторым старейшим языком программирования высокого уровня, после Fortran. ML семейство языков
+	программирования появились в 1970, в том числе Caml, OCaml (гибрид объектно-функциональный язык), и F# от Microsoft.
+	Возможно, самый известный функциональный язык, который яыляется наиболее близким к понятию функциональной «чистоты»
+	является Haskell, который был создан в начале 1990-х. Другие недавние функциональные языки - Clojure и Scala. Оба
+	разработаны для JVM платформа, в настоящее время портированы на. NET окружение. Сегодня, также, многие другие языки
+	используют концепции функционального программирования.
+</p>
+<p> Во всех ли языках программирования сужествет понятие функции? Если да, то почему не все языки программирования считается
+	функциональными? Функциональные языки разделяют несколько основных концепций.
+</p>
+<p> <h3>Отсутствие изменяемого состояния</h3></p>
+<p>Первый принцип - использование неизменныхзначений. Вы можете вспомнить известное со школы уравнение Пифагора , которое описывает соотношение сторон в треугольнике:
+</p>
+<p>х<sup>2</sup> + у<sup>2</sup> = z<sup>2</sup></p>
+<p>Если заданы значениядляпеременных хи у, скажем х = 3 и у = 4, можно вычислить значение для z (5 в данном случае). Ключевая идея здесь в том, что значения никогда неизменяются. Было бы быть сумасшестривем, написать 3++, но вы могли бы повторно решить уравнение назначив сначала
+	новыезначения для тех жепеременных.</p>
+<p>Большинство языков программирования не проводят четкого различия между значением (то есть, содержимым памяти) и
+	переменной, которая ссылается на него. В Java, использоуется final для предотвращения модификации переменной, таким образом мы получаем объекты, которые являются неизменяемыми значениями.
+</p>
+<p><span class="font9">Почему мы должны избегать изменяемых значений? Во-первых, разрешая изменять значения, мы усложняем программирование в многопоточной среде. Если несколько потоков могут изменить то же разделяемое значение, у вы обязаны синхронизировать доступ к этому значению. Это довольно утомительно и чревато ошибками программирования, которые даже эксперты воспринимают как вызов.
+	Если вы сделаете значение неизменяемым, проблема синхронизации исчезнет. Параллельное чтение безвредено, таким образом многопоточное программирования становится гораздо проще.</span>
+</p>
+<p>Второе преимущество неизменяемого состояния относится к корректности программ в других отношениях. Код с изменяемым
+	состоянием сложнее к пониманию и тестированию, особенно если модификации не локализованы в одном месте.
+</p>
+<p>Рассмотрим следующий пример, в котором изменяемый список используется для хранения заказов клиента:
+</p>
+<div style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>class</font></strong>&nbsp;Customer&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;<font color='#3f7f5f'>//&nbsp;No&nbsp;setter&nbsp;method
+	</font><br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>private</font></strong>&nbsp;<strong><font color='#7f0055'>final</font></strong>&nbsp;List<Order>&nbsp;orders;
+		<br/>
+		<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;List<Order>&nbsp;getOrders()&nbsp;{
+			<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>return</font></strong>&nbsp;orders;
+			<br/>&nbsp;&nbsp;&nbsp;&nbsp;}
+			<br/>
+			<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;Customer(...)&nbsp;{...}
+			<br/>}</div>
+
+<p>Это оправданно, что клиенты Customer захотят просмотреть список Orders. К сожалению, в результате изменений списока
+	через метод доступа getOrders, мы потеряли контроль над ним! Клиент может изменить список без нашего ведома. Мы не
+	предоставлем мутатор для заказов и клас запрещен к наследованию, однако эти меры защиты не срабатывают. Сам список еще
+	может быть изменен.
+</p>
+<p>Мы могли обойти эту проблему, имея getOrders который возвращает копию списка или добавив специальные методы доступа в
+	Customer, которые обеспечат контролируемый доступ к заказам. Тем не менее, копирование списока стоит дорого, особенно
+	для больших списков. Добавление нерегламентированных методов доступа увеличивает сложность объекта, бремя тестирования
+	и усилия, необходимые другим программистам, чтобы понять и использовать класс.
+</p>
+<p>Однако, если список заказов неизменен и элементы списка являются неизменными, эти опасения не актуальны. Клиенты
+	могут вызвать методы чтения но они не могут изменить заказы, поэтому мы сохраняем контроль над состоянием объекта.
+</p>
+<p>Что произойдет, когда список заказов требуется изменить, но он стал огромным? Должны ли мы сделать его изменяемым,
+	чтобы избежать накладных расходов на создание копии большого объекта? К счастью, у нас есть эффективный способ для
+	копирования больших структур данных; мы повторно использовуем части, которые не изменяются! Когда мы добавляем новый
+	заказ в наш список заказов, мы можем повторно использовать остальную часть списка.
+</p>
+<p>Некоторые изменчивость является неизбежным. Все программы должны выполнять ввод/вывод данных. В противном случае, они
+	не смогут сделать ничего, кроме как разогреть процессор. Однако функциональное программирование побуждает нас мыслить
+	стратегически о том, когда и где изменчивость необходима. Если мы инкапсулируем изменения в четко определенных
+	областях и будем держать остальной код, без них, мы повысим надежность и модульность нашего кода.
+</p>
+
+<h3> Функции первого класса</h3>
+<p>В большинстве языков, мы привыкли к передаче объектов и примитивных значений методам, возвращению их из методов, и
+	присвоения их переменным. Это означает, что объекты и примитивы
+	значения первого класса. Обратите внимание, что сами классы не являются значениями первого класса, хотя рефлексия предоставляет информацию о классах.
+</p>
+<p>Функции не значения первого класса в большинстве объектно-ориентированных языках. Поясним разницу между методамиифункциями.</p>
+<p>Метод представляет собой блок кода привязанный к определенному классу. Он может быть вызван только в контексте класса, если он определяется статическим, или в контексте экземпляра класса. Функция является более общим понятием. Она не привязанна к какому-либо конкретному классу или объекту. Поэтому все методы экземпляра
+	являются функциями, где один из аргументов объект.
+</p>
+<p>В объктно-ориентированных языках вы не можете передать метод в качестве аргумента другому методу, возвращать метод из
+	метода, или присвоить метод в качестве значения переменной.
+</p>
+<p>Однако большинство анонимных вложенных классовявляются эффективными &quot;обертками&quot; для функиций. Например, многие методы в Java принимают экземпляр реализующий интерфейс, который содержит один метод. Вот типичный пример, указание ActionListener для AWT / Swing приложений:
+</p>
+
+<div style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>package</font></strong>&nbsp;functions;
+	<br/>
+	<br/><strong><font color='#7f0055'>import</font></strong>&nbsp;java.awt.*;
+	<br/><strong><font color='#7f0055'>import</font></strong>&nbsp;java.awt.event.*;
+	<br/>
+	<br/><strong><font color='#7f0055'>class</font></strong>&nbsp;HelloButtonApp2&nbsp;{
+	<br/>
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>private</font></strong>&nbsp;<strong><font color='#7f0055'>final</font></strong>&nbsp;Button&nbsp;button&nbsp;=&nbsp;<strong><font color='#7f0055'>new</font></strong>&nbsp;Button();
+	<br/>
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;HelloButtonApp2()&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;button.addActionListener(<strong><font color='#7f0055'>new</font></strong>&nbsp;ActionListener()&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>void</font></strong>&nbsp;actionPerformed(ActionEvent&nbsp;e)&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<font color='#2a00ff'>"Hello&nbsp;There:&nbsp;event&nbsp;received:&nbsp;"</font>&nbsp;+&nbsp;e);
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;});
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;}
+	<br/>}</div>
+
+<p>Если мы хотим создать кнопку, чтобы сделать что-то, мы должны указать объект ActionListener, который имеет один
+	метод: actionPerformed. Мы использовали анонимный вложенный классдля реализации интерфейса и метод.
+</p>
+<p>Определять новые интерфейсы, как этот, чтобы объявить один абстрактный метод очень распространено в Java. Они часто
+	называют &quot;колбеки&quot;, потому что они, как правило, используется для регистрации кода клиента, который будет
+	вызываться для определенных событий.
+</p>
+<p>В мире Java API, должны быть созданы сотни разовых, специальных интерфейсов, таких как ActionListener. Это
+	значительно увеличивает когнитивную нагрузку на разработчика, когда требуется знать все из них. Вы проводите много
+	времени за чтением Javadocs или обращаетесь к IDE чтобы она напомнила вам. Нам говорили, что абстракция это хорошо,
+	так? Ну, давайте введем абстракции для всех этих &quot;объектов-функций&quot;!
+</p>
+<p>Во-первых, нужен интерфейс, который определяет &quot;функцию&quot;, которая принимает один аргумент типа параметра А
+	и возвращает void: 
+	</p>
+
+<div style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>package</font></strong>&nbsp;functions;
+	<br/>
+	<br/><strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>interface</font></strong>&nbsp;FunctionlVoid<A>&nbsp;{
+		<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>void</font></strong>&nbsp;apply(A&nbsp;a);
+		<br/>
+		<br/>}
+		<br/></a></div>
+
+<p>Вы можете использовать обобщенный метод везде где это требуется, но я выбрал apply, потому что это общее название в
+	функциональном программировании, что происходит от соглащения которое говорит что вы &quot;применяете&quot; функцию к
+	своим аргументам, когда вы вызываете ее.
+</p>
+<p>Теперь давайте представим, что есть &quot;функциональная&quot; версия Abstract Window Toolkit (AWT),
+	java.fawt.Component, с методом addActionListener, который принимает объект FunctionVoid вместо ActionListener:
+</p>
+
+<div style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>package</font></strong>&nbsp;functions;
+	<br/>
+	<br/><strong><font color='#7f0055'>import</font></strong>&nbsp;java.fawt.*;
+	<br/><strong><font color='#7f0055'>import</font></strong>&nbsp;java.fawt.event.*;
+	<br/>
+	<br/><strong><font color='#7f0055'>class</font></strong>&nbsp;FunctionalHelloButtonApp&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>private</font></strong>&nbsp;<strong><font color='#7f0055'>final</font></strong>&nbsp;Button&nbsp;button&nbsp;=&nbsp;<strong><font color='#7f0055'>new</font></strong>&nbsp;Button();
+	<br/>
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;FunctionalHelloButtonApp()&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;button.addActionListener(<strong><font color='#7f0055'>new</font></strong>&nbsp;Function1Void<ActionEvent>()&nbsp;{&nbsp;<font color='#3f7f5f'>//&nbsp;1&nbsp;public&nbsp;void&nbsp;apply(ActionEvent&nbsp;e)&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;//&nbsp;2
+	</font><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<font color='#2a00ff'>"Hello&nbsp;There:&nbsp;event&nbsp;received:&nbsp;"</font>+e);
+		<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;});
+		<br/>&nbsp;&nbsp;&nbsp;&nbsp;}
+		<br/>}</div>
+
+<p>Вы можете возразить, что наличие пользовательского типа в качестве аргумента addActionListener не позволяет
+	пользователю передать неподходящий объект. Вам также могут утверждать, что отдельное имя интерфейса и
+	пользовательского метода упрощает изучение API для программиста.
+</p>
+<p>Давая абстракции специальные названия не представляется возможным предотвратить неправильную реализацию
+	пользователем. Параметр типа для FunctionVoid&lt;ActionEvent&gt; по прежнему останутся в контракте addActionListener.
+	Это еще одна немного документации для пользователя.
+</p>
+
+
+<p> <h3>Лямбда-выражения и замыкания</h3></p>
+<p> Не было бы замечательно, если бы мы могли просто написать
+	анонимную функцию просто со списком аргументов и телом?
+</p>
+<p>Большинство языков программирования теперь поддерживают это. После нескольких лет дискуссий, в JDK 8 введен синтаксис
+	для определения
+	анонимных функций,которые также называетсялямбдами</p>
+
+<div style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>public</font></strong>&nbsp;FunctionalHelloButtonApp()&nbsp;{&nbsp;
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;button.addActionListener(#{&nbsp;ActionEvent&nbsp;e&nbsp;->&nbsp;System.out.println(<font color='#2a00ff'>"Hello&nbsp;There:&nbsp;event&nbsp;received:&nbsp;"</font>+e)&nbsp;});
+	<br/>}</div>
+
+
+<p>Выражение # {...} являетсясинтаксисом лямбда-выражений. Слева от &quot;стрелки&quot; (-&gt;) список аргументов и тело
+	функции справа. Обратите внимание, сколько спагетти-кода этот синтаксис удаляет!
+</p>
+
+<p>Термин лямбда это еще одино название для
+	анонимной функции.  Он происходит от использования греческой лямбда символа лямбды представления функции в лямбда-исчислениях.</p>
+<p>Замыкания</p>
+<p>Замыкание образуется, когда тело функции ссылается на одну или несколько
+	свободных переменных, которые не передаются в качестве аргументов или определяются внутри тела, однако определены в области видимости функции. Среда выполнения должна &quot;закрытся над&quot; этими переменными так они доступны, когда функция фактически выполняется, что может произойти после того как исходные переменные вышли из области видимости!
+</p>
+<p> <h3>Функций высших порядков</h3></p>
+<p>Существует специальный термин для функций, которые принимают другие функции в качестве аргументов или возвращают их в
+	качестве результатов:
+	функции высших порядков. Зачастую методы ограничены примитивными типами и объектами в качестве аргументов и возвращаемых значений, но мы можем имитировать эту функцию при помощи приведенного &quot;функционального&quot; интерфейса.
+</p>
+<p> Функции высших порядков являются мощным инструментом для построения абстракций. Например, комбинаторы являются зачастую функциями высшего порядка в функциональных языках.</p>
+<p> <h3>Функции свободные от побочных эффектов</h3>
+</p>
+<p>Другим источником сложности, который приводит к ошибкам, являются функции, которые изменяют состояние, например,
+	устанавливают значение поля объекта или глобальных переменных.
+</p>
+<p>В математике, функции никогда не имеют побочныех эффектов, то есть они свободны от побочных эффектов. Например, независимо от того, сколько раз запустить sin(х), всегда его результат будет одинаковым. Никакое внешнее состояние не будет изменено. Обратите внимание, что реальная реализация может кэшировать ранее вычисленные значения, для повышения эффективности, что потребует изменения состояния кэша.
+</p>
+<p>Возможность заменить вызов функции для определенного набора параметров его возвращаемым значением называется
+	ссылочной прозрачностью. Это приводит к фундаментальному следствию для функций без побочных эффектов - функция и соответствующие возвращаемые значения являются синонимами. Вы можете заменить результат вызова любой такой функции значением. С другой стороны, можно представить любое значение с вызовом функции!
+</p>
+<p> Функции без побочных эффектов делают отличные строительные блоки для повторного использования, так как они не
+	зависят от контекста, в котором они работают. По сравнению с функциями которые имеют побочные эффекты, они также легче
+	в проектировании, понимании, оптимизации и тестировании. Таким образом, они имеют меньше шансов содержать ошибки.
+</p>
+<p> <h3>Рекурсия</h3></p>
+<p>Напомним, что функциональное программирование в чистом виде не позволяет изменять значения. Это означает, что мы не можем использовать изменяемые счетчики цикла для перебора коллекции!
+</p>
+<p> Однако, существуют другие подходы итерации в рамках операций над функциональными коллекциями.
+</p>
+<p>Классический функциональный альтернативой итерационного цикла является использование рекурсии,где каждый проход через функцию осуществляет свое воздействие на следующий элемент в коллекции, пока не будет достигнута точка завершения. Рекурсия также является естественным подходом для некоторых алгоритмов, таких как обход дерева, где каждая ветвь сам является дерево.
+</p>
+<p>Рассмотрим следующий пример, когда модульный тест определяет простой тип дерева, со значением в каждом узле, и левым
+	и правым поддеревьями. Тип Tree определяет рекурсивный метод toString, который обходит дерево и сохраняет строку из
+	каждого узла. После определения, модульный тест создает экземпляр дерева и проверяет ожидаемую работу ToString:
+</p>
+
+<div style='background:#FFFFFF; font-family: Courier New, Courier; font-size: 10pt; COLOR: #000000; padding-bottom: 0px; padding-left: 0px; padding-right: 0px; padding-top: 0px;'><strong><font color='#7f0055'>package</font></strong>&nbsp;functions;
+	<br/>
+	<br/><strong><font color='#7f0055'>import</font></strong>&nbsp;<strong><font color='#7f0055'>static</font></strong>&nbsp;org.junit.Assert.*;
+	<br/>
+	<br/><strong><font color='#7f0055'>import</font></strong>&nbsp;org.junit.Test;
+	<br/>
+	<br/><strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>class</font></strong>&nbsp;RecursionTest&nbsp;{
+	<br/>
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>static</font></strong>&nbsp;<strong><font color='#7f0055'>class</font></strong>&nbsp;Tree&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color='#3f7f5f'>//&nbsp;public&nbsp;fields&nbsp;for&nbsp;simplicity
+	</font><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>final</font></strong>&nbsp;Tree&nbsp;left;&nbsp;<font color='#3f7f5f'>//&nbsp;left&nbsp;subtree
+	</font><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>final</font></strong>&nbsp;Tree&nbsp;right;&nbsp;<font color='#3f7f5f'>//&nbsp;right&nbsp;subtree
+	</font><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>final</font></strong>&nbsp;<strong><font color='#7f0055'>int</font></strong>&nbsp;value;&nbsp;<font color='#3f7f5f'>//&nbsp;value&nbsp;at&nbsp;this&nbsp;node
+	</font><br/>
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;Tree(Tree&nbsp;left,&nbsp;<strong><font color='#7f0055'>int</font></strong>&nbsp;value,&nbsp;Tree&nbsp;right)&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>this</font></strong>.left&nbsp;=&nbsp;left;
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>this</font></strong>.value&nbsp;=&nbsp;value;
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>this</font></strong>.right&nbsp;=&nbsp;right;
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
+	<br/>
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>final</font></strong>&nbsp;String&nbsp;toString()&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String&nbsp;leftStr&nbsp;=&nbsp;left&nbsp;==&nbsp;<strong><font color='#7f0055'>null</font></strong>&nbsp;?&nbsp;<font color='#2a00ff'>"n"</font>&nbsp;:&nbsp;left.toString();
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String&nbsp;rightStr&nbsp;=&nbsp;right&nbsp;==&nbsp;<strong><font color='#7f0055'>null</font></strong>&nbsp;?&nbsp;<font color='#2a00ff'>"n"</font>&nbsp;:&nbsp;right.toString();
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>return</font></strong>&nbsp;<font color='#2a00ff'>"("</font>&nbsp;+&nbsp;leftStr&nbsp;+&nbsp;<font color='#2a00ff'>"-"</font>&nbsp;+&nbsp;value&nbsp;+&nbsp;<font color='#2a00ff'>"-"</font>&nbsp;+&nbsp;rightStr&nbsp;+&nbsp;<font color='#2a00ff'>")"</font>;
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;}
+	<br/>
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;<font color='#646464'>@Test</font>
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>public</font></strong>&nbsp;<strong><font color='#7f0055'>void</font></strong>&nbsp;walkATree()&nbsp;{
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree&nbsp;root&nbsp;=&nbsp;<strong><font color='#7f0055'>new</font></strong>&nbsp;Tree(<strong><font color='#7f0055'>new</font></strong>&nbsp;Tree(
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>new</font></strong>&nbsp;Tree(<strong><font color='#7f0055'>null</font></strong>,&nbsp;3,&nbsp;<strong><font color='#7f0055'>null</font></strong>),&nbsp;2,&nbsp;<strong><font color='#7f0055'>new</font></strong>&nbsp;Tree(<strong><font color='#7f0055'>new</font></strong>&nbsp;Tree(<strong><font color='#7f0055'>null</font></strong>,&nbsp;5,&nbsp;<strong><font color='#7f0055'>null</font></strong>),&nbsp;4,&nbsp;<strong><font color='#7f0055'>null</font></strong>)),
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1,
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong><font color='#7f0055'>new</font></strong>&nbsp;Tree(<strong><font color='#7f0055'>new</font></strong>&nbsp;Tree(<strong><font color='#7f0055'>null</font></strong>,&nbsp;7,&nbsp;<strong><font color='#7f0055'>null</font></strong>),&nbsp;6,&nbsp;<strong><font color='#7f0055'>new</font></strong>&nbsp;Tree(<strong><font color='#7f0055'>null</font></strong>,&nbsp;8,&nbsp;<strong><font color='#7f0055'>null</font></strong>))
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;String&nbsp;expected&nbsp;=&nbsp;<font color='#2a00ff'>"(((n-3-n)-2-((n-5-n)-4-n))-i-((n-7-n)-6-(n-8-n)))"</font>;
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assertEquals(expected,&nbsp;root.toString());
+	<br/>&nbsp;&nbsp;&nbsp;&nbsp;}
+	<br/>}
+	<br/></div>
+
+<p> Тем не менее, каждый рекурсивный вызов добавляет новый кадр в стек, который может превысить размер стека для
+	глубоких рекурсий. Хвостовая рекурсия может быть преобразованы в циклы, что исключает дополнительные накладные расходы вызова функции.
+</p>
