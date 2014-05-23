@@ -47,18 +47,12 @@
         }
 
         $(function () {
-            $("[rel-url]").click(function(){
-                $(".current").removeClass("current");
-                $(this).parent().addClass("current");
-                loadUrl($(this).attr("rel-url"));
-            });
-
             var params = getQueryParams(window.location.href.substr(window.location.href.lastIndexOf("?")));
-            if(params['page']) {
-                loadUrl("content/ru/" + params['page'] + ".html");
-            } else {
-                loadUrl("content/ru/cv.html");
-            }
+            if(!params['page']) {
+							params['page'] = 'cv';
+						}
+						loadUrl("content/ru/" + params['page'] + ".html?nocache=" + new Date().getTime());
+						$('li[page="'+params['page']+'"]').addClass('current');
         });
     </script>
 </head>
@@ -75,13 +69,13 @@
 <header class="container">
     <nav id="nav-wrap" class="cf">
         <ul id="menu">
-            <li class="current"><a href="#" rel-url="content/ru/cv.html">Резюме</a></li>
-            <li><a href="#" rel-url="content/ru/biography.html">Биография</a></li>
-            <li><a href="#" rel-url="content/ru/abstract.html">Реферат</a></li>
-            <li><a href="#" rel-url="content/ru/library.html">Библиотека</a></li>
-            <li><a href="#" rel-url="content/ru/references.html">Ссылки</a></li>
-            <li><a href="#" rel-url="content/ru/search-report.html">Отчет о поиске</a></li>
-            <li><a href="#" rel-url="content/ru/individual.html">Индивидуальный раздел</a></li>
+            <li page="cv"><a href="?page=cv" >Резюме</a></li>
+            <li page="biography"><a href="?page=biography" >Биография</a></li>
+            <li page="abstract"><a href="?page=abstract" >Реферат</a></li>
+            <li page="library"><a href="?page=library" >Библиотека</a></li>
+            <li page="references"><a href="?page=references" >Ссылки</a></li>
+            <li page="search-report"><a href="?page=search-report" >Отчет о поиске</a></li>
+            <li page="individual"><a href="?page=individual" >Индивидуальный раздел</a></li>
         </ul>
     </nav>
 </header>

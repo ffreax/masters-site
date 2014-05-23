@@ -46,20 +46,14 @@
             return params;
         }
 
-        $(function () {
-            $("[rel-url]").click(function(){
-                $(".current").removeClass("current");
-                $(this).parent().addClass("current");
-                loadUrl($(this).attr("rel-url"));
-            });
-
-            var params = getQueryParams(window.location.href.substr(window.location.href.lastIndexOf("?")));
-            if(params['page']) {
-                loadUrl("content/en/" + params['page'] + ".html");
-            } else {
-                loadUrl("content/en/cv.html");
-            }
-        });
+				$(function () {
+					var params = getQueryParams(window.location.href.substr(window.location.href.lastIndexOf("?")));
+					if(!params['page']) {
+						params['page'] = 'cv';
+					}
+					loadUrl("content/en/" + params['page'] + ".html?nocache=" + new Date().getTime());
+					$('li[page="'+params['page']+'"]').addClass('current');
+				});
     </script>
 </head>
 
@@ -75,12 +69,8 @@
 <header class="container">
     <nav id="nav-wrap" class="cf">
         <ul id="menu">
-            <li class="current"><a href="#" rel-url="content/en/cv.html">CV</a></li>
-            <li><a href="#" rel-url="content/en/abstract.html">Abstract</a></li>
-            <li><a href="#" rel-url="content/en/library.html">Library</a></li>
-            <li><a href="#" rel-url="content/en/references.html">References</a></li>
-            <li><a href="#" rel-url="content/en/search-report.html">Search report</a></li>
-            <li><a href="#" rel-url="content/en/individual.html">Personal page</a></li>
+					<li page="cv"><a href="?page=cv" >CV</a></li>
+					<li page="abstract"><a href="?page=abstract" >Abstract</a></li>
         </ul>
     </nav>
 </header>

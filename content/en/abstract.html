@@ -1,0 +1,123 @@
+<p><a href="#u1"> Introduction </a> <br/> <a href="#u2">1.Install the program </a><a href="#u2">Relevance of the
+	topic </a> <br/> <a href="#u3">2 Research goals and objectives, expected results </a><br/> <a
+		href="#u4">3 A review of research and development </a><br/> <a href="#u5">3.1
+	Scheduler in Hadoop</a> <br/> <a href="#u6">3.2 Scheduler «Longest Approximate Time to End (LATE)»</a> <br/> <a
+		href="#u7">3.3 Uniform planning (FAIR scheduler) [5]</a> <br/> <a href="#u8">3.4 Hadoop 2.0. </a><a href="#u8">Capacity
+	scheduler [6]</a> <br/> <a href="#u9"> 4 </a><a href="#u9">The proposed algorithm is based on lottery
+	scheduling</a> <br/> <a href="#u10">Conclusions</a> <br/> <a href="#u11">List of sources</a> <br/></p> <h3><a
+		name="u1">Introduction</a></h3>
+<p> Hadoop is a cloud-based system for distributed data processing in which incoming jobs are described in accordance
+	with the programming model MapReduce. For smaller organizations using Hadoop, characterized by the presence of
+	heterogeneous clusters of all resources available to them, and for large corporate systems - the presence of huge
+	homogeneous clusters. Users of the system may be a group of individuals who are characterized by parameters such as
+	priorities, the reserved amount of computing power, the guaranteed number of shared disk space, and more. Workload in
+	the cluster must be distributed among an arbitrary number of user tasks and respond to a number of requirements.
+</p>
+<p> Programming model. During the execution of distributed processing takes the input key / value pairs, and generates a
+	result set similar pairs. Library user MapReduce computation is in two phases: Map and Reduce. Map, written by a
+	customer receives as input and produces as output the key / value pairs. MapReduce framework groups together all
+	intermediate results obtained in Phase Map with the same intermediate key, and transmits them to the input phase
+	Reduce. Function Reduce, usually written by a customer accepts an intermediate key and a set of values ​​associated
+	with that key is to combine the results obtained in a supposedly smaller set of values. Typically, within a single
+	call made Reduce zero and one output. Intermediate values ​​are input to Reduce in an iterative way, which allows you
+	to store lists of values ​​that are greater than the available memory.
+</p> <h3><a name="u2">1 Topicality</a></h3>
+<p> Planners play a critical role in achieving new levels of performance in systems based on Hadoop. It is important to
+	choose the appropriate scheduling algorithm, given the limitations that imposes implementation Hadoop, while
+	maintaining an acceptable level of distribution.
+</p> <h3><a name="u3">2 The purpose and objectives of the study</a></h3>
+<p> Objective is to conduct a comparative analysis of existing methods of planning and developing the concept of an
+	optimized method. As part of the work required:
+<ol>
+	<li>explore the implementation scheduler Hadoop;</li>
+	<li>analyze existing scheduling algorithms;</li>
+	<li>offer its own approach based on studied the advantages and disadvantages of ready solutions;</li>
+</ol> </p> <h3><a name="u4">3 Review of Research and Development</a></h3>
+<p> The main source of revealing theoretically basis paradigm MapReduce, we can assume the article Jeffrey Dean and
+	Sanjay Ghemawat [1]. Implementation within the Hadoop scheduler described in detail in [3] and is the most
+	comprehensive source on the subject. Depth research approaches to optimization are given in [4-8].
+</p> <h3><a name="u5">3.1 Scheduler in Hadoop</a></h3>
+<p> Hadoop MapReduce implementation in many ways consistent with the approach described in [1]. One main (master) node
+	controls a plurality of slave (slaves) [2]. File with the original data, which is a distributed file system (HDFS), to
+	provide fault tolerance and improved performance split into chunks (chunk) of the same size and replicated with a
+	given coefficient of duplication. Hadoop MapReduce job splits received (job) on a variety of tasks (task). Each piece
+	of input data is processed given Map function. Map phase output values ​​are broken down by key and sent to the input
+	phase Reduce. The circuit shown in [3] (Fig. 1) illustrates the calculation using the approach MapReduce. Hadoop runs
+	multiple tasks and Map Reduce several tasks in parallel on each slave node - 2 each for closing idle CPU and disk
+	subsystem. Each slave node sends a message to the master node when computing tasks slots are empty, and then assigns a
+	new task scheduler nodes. Built in Hadoop scheduler runs tasks in FIFO order with five priority levels [3]. When slots
+	are exempt tasks, the scheduler scans the available tasks in order of priority, and saves time spent searching for the
+	desired task.
+</p> <br/>
+<div style="text-align:center"><img src="../../images/abstract/1.png" align="center"/><br/> Figure 1. - MapReduce
+	computation scheme
+</div> <br/>
+<div style="text-align:center"><img src="../../images/abstract/mapreduce-animation.gif" align="center"/><br/> Figure 2.
+	- Implementation of MapReduce
+</div> <br/>
+<p> Map tasks for the scheduler uses local optimization implemented in Google MapReduce [1]: After selecting the job
+	scheduler allocates Map tasks to nodes having the maximum amount of data to perform (if possible, all data must be
+	located on the selected node, otherwise - on one of the nodes Rack and finally the remote reception). Hadoop, uses
+	backup tasks to mitigate the problem of heterogeneous clusters [1].
+</p> <h3><a name="u6">3.2 Scheduler «Longest Approximate Time to End (LATE)»</a></h3>
+<p> Proposed speculative scheduler allows you to partially deal with the above shortcomings in environments with
+	conditions close to real. The basic idea is as follows: &quot;The scheduler is usually speculative runs tasks that
+	will have the smallest execution time, as these tasks to the best opportunities for overtaking speculative copy of the
+	original objectives and minimize task time&quot; [4]. Intuitively such a greedy policy is good, if the nodes run at a
+	constant speed, as well as the absence of start-up costs of speculative task on another node is idle.
+</p> <h3><a name="u7">3.3 Uniform planning (FAIR scheduler) [5]</a></h3>
+<p> Facebook portal was presented scheduler for uniform distribution of tasks using the slots. His basic ideas:</p>
+<p>
+<ol>
+	<li>Isolation: the creation for all users (tasks) illusion of a completely private cluster.</li>
+	<li>Statistical redistribution: redistribution of unused computing resources from one user to another.</li>
+</ol> </p> <br/>
+<div style="text-align:center"><img src="../../images/abstract/2.png" align="center"/><br/> Figure 3. - Task allocation
+	to pools
+</div> <br/> <h3><a name="u8">3.4 Hadoop 2.0. </a><a name="u8">Capacity scheduler [6]</a></h3>
+<p> When planning the computing power instead of pools created several queues, each - with configurable number of slots
+	for the Map and Reduce phases [7]. Each queue is also assigned some guaranteed computing power, the total computing
+	power of a cluster is the sum of the computing power of all queues. Queues are monitored and if any place does not
+	consume processing power allocated to it, the excess may be temporarily given to other queues. Given the fact that the
+	queue can represent both individuals and large organizations, any free computing resources redistributed to other
+	consumers.
+</p> <h3><a name="u9">4 The proposed algorithm is based on lottery scheduling</a></h3>
+<p> Algorithm is based on the distribution of tasks lottery tickets for access to computing resources. When the
+	scheduler has to decide randomly selected lottery ticket, and the holder is entitled to run their jobs on the cluster
+	nodes. More important tasks you can give more tickets to increase the probability of winning.
+</p> <h3><a name="u10">Conclusions</a></h3>
+<p> Implementation connection scheduler is another step in the evolution of cluster computing system using Hadoop.
+	Support for plug-in scheduler allows to use (and develop) schedulers optimized for a particular workload and the
+	particular application. In addition, new planners made it possible to create multi-user data storage system using
+	Hadoop, by allowing sharing of the entire infrastructure Hadoop multiple users and organizations.
+</p>
+<p> Hadoop system develops as the evolution of its usage patterns and now supports new types of workloads and usage
+	scenarios (eg, large multi-data repository and common data repository for multiple organizations). These new
+	flexibilities offered Hadoop, are a huge step forward towards a more optimized use of resources in the cluster
+	analysis of large amounts of data.
+</p> <h3><a name="u11">References </a></h3>
+<p>
+<ol>
+	<li> Dean J. Simplified Data Processing on Large Clusters [Text] / J. Dean, S. Ghemawat / / Electronic edition, Google
+		Inc., 2004. - 6p
+	</li>
+	<li> Chuprin VI Analysis of security problems the architecture of distributed applications for example NoSQL software
+		framework Hadoop [Text] / VI Chuprin, AV Chernyshev, NE Gubenko / / Electronic Edition, Donetsk National Technical
+		University, 2013. - 356c
+	</li>
+	<li> Zaharia M. Improving MapReduce Performance in Heterogeneous Environments [Text] / M. Zaharia, A. Konwinski, AD
+		Joseph, R. Katz, I. Stoica / / Electronic edition, Berkley., 2009. - 14p
+	</li>
+	<li> Xiao Z. A Hierarchical Approach to Maximizing MapReduce Efficiency [Text] / Z. Xiao, H. Chen, B. Zang / / IEEE
+		Computer Society., 2011. - 25p
+	</li>
+	<li> Zaharia M. Improving MapReduce Performance in Heterogeneous Environments [Text] / M. Zaharia, A. Konwinski, AD
+		Joseph, R. Katz, I. Stoica / / Electronic edition, Berkley., 2009. - 25p
+	</li>
+	<li> Rasooli A. An Adaptive Scheduling Algorithm for Dynamic Heterogeneous Hadoop Systems [Text] / A. Rasooli, DG Down
+		/ / Department of Computing and Software McMaster University., 2012. - 35p
+	</li>
+	<li> Sandholm T. Dynamic Proportional Share Scheduling in Hadoop [Text] / T. Sandholm and K. Lai / / Hewlett-Packard
+		Laboratories., 2013. - 54p
+	</li>
+</ol> </p>
