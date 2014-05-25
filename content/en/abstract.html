@@ -8,7 +8,7 @@
 <head>
 
 	<meta charset="utf-8">
-	<title>Чуприн Владислав</title>
+	<title>Abstract - Chuprin Vladislav</title>
 	<meta name="description" content="">
 	<meta name="author" content="Vladislav Chuprin">
 
@@ -45,7 +45,7 @@
 
 	<article id="page-content" class="container">
 
-<p><a href="#u1"> Introduction </a> <br/> <a href="#u2">1.Install the program </a><a href="#u2">Relevance of the
+<p><a href="#u1"> Introduction </a> <br/> <a href="#u2">1.</a><a href="#u2">Relevance of the
 	topic </a> <br/> <a href="#u3">2 Research goals and objectives, expected results </a><br/> <a
 		href="#u4">3 A review of research and development </a><br/> <a href="#u5">3.1
 	Scheduler in Hadoop</a> <br/> <a href="#u6">3.2 Scheduler «Longest Approximate Time to End (LATE)»</a> <br/> <a
@@ -63,10 +63,10 @@
 <p> Programming model. During the execution of distributed processing takes the input key / value pairs, and generates a
 	result set similar pairs. Library user MapReduce computation is in two phases: Map and Reduce. Map, written by a
 	customer receives as input and produces as output the key / value pairs. MapReduce framework groups together all
-	intermediate results obtained in Phase Map with the same intermediate key, and transmits them to the input phase
-	Reduce. Function Reduce, usually written by a customer accepts an intermediate key and a set of values ​​associated
-	with that key is to combine the results obtained in a supposedly smaller set of values. Typically, within a single
-	call made Reduce zero and one output. Intermediate values ​​are input to Reduce in an iterative way, which allows you
+	intermediate results obtained in Map phase with the same intermediate key, and transmits them to the input phase
+	Reduce. Function Reduce, usually written by a user obtain an intermediate key and a set of values ​​associated
+	with that key to combine the results in a supposedly smaller set of values. Typically, within a single
+	Reduce call created zero and one output pair. Intermediate values ​​are pass to Reduce in an iterative way, which allows you
 	to store lists of values ​​that are greater than the available memory.
 </p> <h3><a name="u2">1 Topicality</a></h3>
 <p> Planners play a critical role in achieving new levels of performance in systems based on Hadoop. It is important to
