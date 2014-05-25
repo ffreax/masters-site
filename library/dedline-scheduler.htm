@@ -85,18 +85,18 @@
 		class="font2" style="font-style:italic;">s<sub>m</sub></span><span class="font3"></sub> and </span><span
 		class="font2" style="font-style:italic;">s<sub>r</sub></span><span class="font3"></sub> as described below:</span>
 </p>
-<img src="dedline-scheduler_files/dedline-scheduler-1.png" style="width:251pt;height:172pt;"/><img
-		src="dedline-scheduler_files/dedline-scheduler-2.png" style="width:250pt;height:122pt;"/>
+<img src="dedline-scheduler_files/dedline-scheduler-1.jpg" style="width:251pt;height:172pt;"/><img
+		src="dedline-scheduler_files/dedline-scheduler-2.jpg" style="width:250pt;height:122pt;"/>
 
 <p><span class="font3">To estimate the duration of the job J we consider map completion time, reduce completion time and data transfer during reduce copy phase. The expression for the cost can be written as:</span>
 </p>
 
-<p><span class="font3"><img src="dedline-scheduler_files/dedline-scheduler-3.png"
+<p><span class="font3"><img src="dedline-scheduler_files/dedline-scheduler-3.jpg"
 														style="width:177pt;height:20pt;"/></span></p>
 
 <p><span class="font3">Since the job has an arrival time A and deadline D,</span></p>
 <img
-		src="dedline-scheduler_files/dedline-scheduler-4.png" style="width:259pt;height:239pt;"/>
+		src="dedline-scheduler_files/dedline-scheduler-4.jpg" style="width:259pt;height:239pt;"/>
 
 <p><span class="font3">Our </span><span class="font2" style="font-style:italic;">constraint scheduler</span><span
 		class="font3"> uses this criteria to schedule Hadoop jobs.</span></p>
@@ -116,7 +116,7 @@
 		class="font2" style="font-style:italic;">s<sup>r</sup>m<sup>iax</sup></span><span class="font3"></sup>
 	will be:</span></p>
 
-<p><span class="font3"><img src="dedline-scheduler_files/dedline-scheduler-5.png"
+<p><span class="font3"><img src="dedline-scheduler_files/dedline-scheduler-5.jpg"
 														style="width:151pt;height:22pt;"/></span></p>
 
 <p><span class="font3">We intend to address in our future work the effect of various data distribution models. Starting reduce tasks early might affect other jobs ability to obtain reduce task slots. In</span>
@@ -128,7 +128,7 @@
 <p><span class="font4">III. </span><span class="font3" style="font-variant:small-caps;">Design and Implementation</span>
 </p>
 
-<div><img src="dedline-scheduler_files/dedline-scheduler-6.png" style="width:253pt;height:252pt;"/></div>
+<div><img src="dedline-scheduler_files/dedline-scheduler-6.jpg" style="width:253pt;height:252pt;"/></div>
 <br clear="all"/>
 
 <p><span class="font4">Hadoop supports pluggable schedulers and we have implemented Constraint scheduler using the minimum task scheduling criteria developed in the previous section. It is developed as a contrib module using Hadoop version 0.20.2 source code. Hadoop config file needs to be modified to use the scheduler. We have also implemented a web based interface that allows the user to specify the deadline for a given job.</span>
@@ -163,7 +163,7 @@
 <p><span class="font3">To evaluate the Constraint Scheduler we ran Hadoop job that represented aggregation operation, which is one of the common type of operation performed by MapReduce. MapRe-duce job equivalent to the following query was used for the experiment.</span>
 </p>
 
-<p><span class="font3"><img src="dedline-scheduler_files/dedline-scheduler-7.png"
+<p><span class="font3"><img src="dedline-scheduler_files/dedline-scheduler-7.jpg"
 														style="width:253pt;height:25pt;"/></span></p>
 
 <p><span class="font3">The &nbsp;&nbsp;&nbsp;useraction &nbsp;&nbsp;&nbsp;table &nbsp;&nbsp;&nbsp;contains</span></p>
@@ -186,7 +186,7 @@
 
 <p><span class="font4">Figure 1 shows the map task allocation results for the same job when submitted with different deadlines. The input size was 975MB which resulted in 16 map tasks. The cluster capacity was 6 map tasks and 6 reduce tasks. We observe that the tasks allocation is done differently for the two deadlines. For 600s deadline, 6 map tasks is scheduled at a time. For 700s deadline, 5 map tasks are scheduled. The number of map tasks scheduled is the minimum tasks value derived by the scheduler. Interestingly, we also notice that the map tasks for deadline 700s finishes earlier than the map tasks for deadline 600s. This is due to the increased map completion time for deadline 600s, as it tries to schedule more map tasks and that results in increased per map completion time though it is within the initial estimate we provide. The increase in per map</span>
 </p>
-<img src="dedline-scheduler_files/dedline-scheduler-8.png" style="width:258pt;height:179pt;"/>
+<img src="dedline-scheduler_files/dedline-scheduler-8.jpg" style="width:258pt;height:179pt;"/>
 
 <p><span class="font3">Figure 2. Map and reduce task allocation for jobs with deadlines 1000s and 680s in cluster with physical hosts</span>
 </p>
@@ -194,7 +194,7 @@
 <p><span class="font4">completion time is due to the cpu sharing among virtualized nodes as described previously. Job with deadline 700s tries to schedule less map tasks which results in better map completion time and hence it finishes faster. The above result was obtained by executing the jobs when the cluster had no other running jobs. The transient spikes seen in Figure 1 correspond to the time interval during which a task has finished but the task’s assigned Tasktracker or any other Tasktracker with empty slot has not sent heartbeat request.</span>
 </p>
 
-<div><img src="dedline-scheduler_files/dedline-scheduler-9.png" style="width:276pt;height:188pt;"/>
+<div><img src="dedline-scheduler_files/dedline-scheduler-9.jpg" style="width:276pt;height:188pt;"/>
 
 	<p><span class="font3">Figure 1. Task allocation for jobs with deadlines 600s and 700s in cluster with virtualized hosts</span>
 	</p>

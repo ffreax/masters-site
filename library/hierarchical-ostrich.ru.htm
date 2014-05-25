@@ -1,119 +1,144 @@
 ﻿<html dir="ltr">
 <head>
-	<meta http-equiv="content-type" content="text/html; charset=UTF-8"></meta>
-	<meta name="generator" content="ABBYY FineReader 11"></meta>
-	<meta name="author" content="xoyo"></meta>
-	<meta name="description" content="gnuplot plot"></meta>
-	<title>cache_iter.eps</title>
-	<link rel="stylesheet" href="hierarchical-ostrich_files/hierarchical-ostrich.css" type="text/css"></link>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta name="generator" content="ABBYY FineReader 11">
+	<meta name="author" content="Vladislav Chuprin">
+	<title>Иерархический подход к максимизации эффективности MapReduce</title>
+	<link rel="stylesheet" href="hierarchical-ostrich_files/hierarchical-ostrich.css" type="text/css"/>
 </head>
 <body dir="ltr">
-<p><a name="bookmark0"></a> <span class="font4" style="font-weight:bold">Иерархический подход к максимизации эффективности MapReduce </span>
-</p>
-<p><span class="font3">Zhiwei Xiao, Haibo Chen, Binyu Zang</span></p>
-<p><span class="font3" style="font-style:italic">Parallel Processing Institute, Fudan University {zwxiao, hbchen, byzang}@ftidan.edu.cn</span>
-</p>
-<p><span class="font3">II. </span><span class="font0" style="font-variant:small-caps">Azwraith Design</span></p>
+<p><a name="bookmark0"></a> <span style="font-weight:bold">Иерархический подход к максимизации эффективности
+	MapReduce</span></p>
+<p> Zhiwei Xiao, Haibo Chen, Binyu Zang</p>
+<p><span style="font-style:italic">Parallel Processing Institute, Fudan University {zwxiao, hbchen,
+	byzang@ftidan.edu.cn </span></p>
 <div>
-	<p><span class="font0" style="font-variant:small-caps">I. Вступление</span></p>
+	<p><span style="font-variant:small-caps">I. Вступление</span></p>
 </div>
-<br clear="all"/>
-
-<p><span class="font3">MapReduce [1] была широко известена своей гибкой масштабируемостью и отказоустойчивостью, с относительным пренебрежением эффективностью, что, впрочем, столь характерно для облачных систем &quot;оплата-по-требованию&quot;, таких как Amazon, Elastic MapReduce. </span><span
-		class="font3">В статье утверждается, что есть несколько уровней локальности данных и параллелизма для типичных многоядерных кластеров, которые могут повлиять на производительность.</span>
+<p>Парадигма MapReduce[1] была широко известена своей гибкой масштабируемостью и отказоустойчивостью, с относительным
+	пренебрежением эффективностью, что, впрочем, столь характерно для облачных систем &quot;оплата по-требованию&quot;,
+	таких как Amazon, Elastic MapReduce. В статье утверждается, что есть несколько уровней локальности данных и
+	параллелизма для типичных многоядерных кластеров, которые могут повлиять на производительность.
 </p>
-<p><span class="font3">Характеризуя ограничение производительности типичных приложений MapReduce на многоядерных кластерах Hadoop, мы показываем, что текущая среда осованная на JVM  (т.е. TaskWorker) не использует локальность данных и параллелизм задач на уровне одного узла.</span>
+<p> Характеризуя ограничение производительности типичных приложений MapReduce на многоядерных кластерах Hadoop, мы
+	показываем, что текущая среда осованная на JVM (т.е. TaskWorker) не использует локальность данных и параллелизм задач
+	на уровне одного узла.
 </p>
-<p><span class="font3">В частности, реализация с открытым исходным кодом от MapReduce, Hadoop [2], использует JVM стреду выполнения для запуска задач MapReduce, что неоптимально использует иерархию кэшерования и существующий во многих многоядерных кластерах параллелизм на основе задач. </span><span
-		class="font3">Hadoop необходимы в качестве входных значений объекты ключ-значение для реализации интерфейса Hadoop Writable для поддержки сериализации и десериализации, являющиеся причиной создание дополнительных объектов и накладных расходов памяти.</span>
+<p> В частности, реализация с открытым исходным кодом от MapReduce, Hadoop[2], использует JVM среду выполнения для
+	запуска задач MapReduce, что неоптимально загружает иерархию кэшерования и существующий во многих многоядерных
+	кластерах параллелизм на основе задач. Hadoop необходимы в качестве входных значений объекты ключ-значение при
+	реализации интерфейса Hadoop Writable для поддержки сериализации и десериализации, являющиеся причиной создания
+	дополнительных объектов и накладных расходов памяти.
 </p>
-<p><span class="font3">Более того, некоторые приложения требуют обработки одинакового фрагмента данных многократно, чтобы получить окончательные результаты. </span><span
-		class="font3">Хотя Hadoop использует локальность данных внутри отдельной итерации путем перемещения вычислений к данным, к сожалению, он не учитывает локальность данных в рамках нескольких итераций обработки, и, следовательно, требует те же данные, загруженные несколько раз с сетевой файловой системы на узлы, которые обрабатывают данные.</span>
+<p> Более того, некоторые приложения требуют обработки одинакового фрагмента данных многократно, чтобы получить
+	окончательные результаты. Хотя Hadoop использует локальность данных внутри отдельной итерации путем перемещения
+	вычислений к данным, к сожалению, он не учитывает локальность данных в рамках нескольких итераций обработки, и,
+	следовательно, требует те же данные, загруженные несколько раз от сетевой файловой системы на узлы, которые
+	обрабатывают данные.
 </p>
-<p><span class="font3">На основании приведенных выше наблюдений, мы предлагаем Azwraith, иерархический подхода к MapReduce, нацеленный на максимальную локальность данных и паралелизм задач MapReduce в рамках Hadoop. </span><span
-		class="font3">В иерархической модели MapReduce Azwraith, каждая Map или Reduce задача, назначенная одному узлу - рассматривается как отдельное MapReduce задание и разбивается на Map и Reduce задачи, которые обрабатываются с помощью среды выполнения MapReduce специально оптимизированной на одном узле. </span><span
-		class="font3">В частности, Azwraith интегрирует эффективню среду выполнения MapReduce (а именно Ostrich [3]) от многоядерных процессоров к Hadoop. </span><span
-		class="font3">Чтобы воспользоваться локальностью данных между узлами одного уровня в сети, Azwraith интегрирует систему которая кэширует данные в памяти, что, вероятно, будет повторно снова, чтобы избежать ненужных сетевых и дисковых затрат.</span>
+<p> На основании приведенных выше наблюдений, мы предлагаем Azwraith, иерархический подхода к MapReduce, нацеленный на
+	максимальную локальность данных и паралелизм задач MapReduce в рамках Hadoop. В иерархической модели MapReduce
+	Azwraith, каждая Map или Reduce задача, назначенная одному узлу рассматривается как отдельное MapReduce задание и
+	разбивается на Map и Reduce задачи, которые обрабатываются с помощью среды выполнения MapReduce специально
+	оптимизированной на одном узле. В частности, Azwraith интегрирует эффективню среду выполнения MapReduce (а именно
+	Ostrich[3]) от многоядерных процессоров к Hadoop. Чтобы воспользоваться локальностью данных между узлами одного
+	уровня в сети, Azwraith интегрирует систему которая кэширует данные в памяти, которые, вероятно, будут использованы снова,
+	чтобы избежать ненужных сетевых и дисковых затрат.
 </p>
-<p><span class="font3">Вместо того чтобы писать новую среду выполнения с нуля, мы повторно использовали и адаптировали эффективную реализацию MapReduce для разделенной многопроцессорной памяти на Hadoop, называемой Ostrich. </span><span
-		class="font3">Ostrich использует &quot;стратегию окна&quot; для MapReduce на многоядерных процессорах и агрессивно эксплуатирует параллелизм задач и локальность данных. </span><span
-		class="font3">Чтобы свести к минимуму сложность, Azwraith следует рабочему процессу Hadoop и оставляет большинство компонентов (например, TaskTracker, HDFS) нетронутыми. </span><span
-		class="font3">Hadoop с расширением Azwraith может также работать на оригинальной основанной на Java среде выполненив обычном порядке.</span>
+<p> II. <span style="font-variant:small-caps">Архитектура Azwraith</span></p>
+<p> Вместо того чтобы писать новую среду выполнения с нуля, мы повторно использовали и адаптировали эффективную
+	реализацию MapReduce для разделяемой многопроцессорной памяти на Hadoop, называемой Ostrich. Ostrich использует
+	&quot;стратегию
+	окна&quot; для MapReduce на многоядерных процессорах и агрессивно эксплуатирует параллелизм задач и локальность
+	данных. Чтобы свести к минимуму сложность, Azwraith следует рабочему процессу Hadoop и оставляет большинство
+	компонентов (например, TaskTracker, HDFS) нетронутыми. Hadoop с расширением Azwraith может также работать на
+	оригинальной основанной на Java среде выполнения в обычном порядке.
 </p>
 <img src="hierarchical-ostrich_files/hierarchical-ostrich-1.jpg" style="width:240pt;height:171pt"/>
 
-<p><span class="font0">Рисунок 1. </span><span class="font0">Архитектура Azwraith : сплошные (цветные) компоненты, которые должны быть скорректированы для Azwraith: Azwraith заменяет TaskWorker с Страус, который использует расположение данных и параллелизм в многоядерных; RPC Client делает</span>
-	<span class="font0" style="font-style:italic">TaskWorker</span> <span class="font0">соответствовать протокол RPC Hadoop и предоставляет услуги RPC к</span>
-	<span class="font0" style="font-style:italic">TaskWorker &quot;,</span> <span class="font0">Клиент DFS предоставляет HDFS доступ для</span>
-	<span class="font0" style="font-style:italic">TaskWorker.</span> <span class="font0"> </span><span class="font0">Пользователь может отправить задание Azwraith или оригинальное Hadoop задание с системой MapReduce с JobClient.</span>
+<p> Рисунок 1. Архитектура Azwraith : сплошные (цветные) компоненты, которые должны быть скорректированы для Azwraith:
+	Azwraith заменяет TaskWorker на Ostrich, который использует локальность данных и многоядерный параллелизм; RPC Client
+	делает <span style="font-style:italic">TaskWorker</span> совместимым с протоколом RPC Hadoop и предоставляет доступ
+	RPC к <span style="font-style:italic">TaskWorker &quot;,</span> Клиент DFS предоставляет HDFS доступ для <span
+			style="font-style:italic">TaskWorker.</span> Пользователь может отправить задание Azwraith или оригинальное Hadoop
+	задание MapReduce с JobClient.
 </p>
-<p><span class="font3">На рисунке 1 показана общая архитектура Azwraith, которая напоминает оригинальный Hadoop. </span><span
-		class="font3">Исполнение заданий Azwraith также следует рабочему процессу в Hadoop. </span><span class="font3">Клиент должен указать тип задания как Azwraith или Hadoop перед отправкой на выполнение. </span><span
-		class="font3" style="font-style:italic">TaskTracker</span> <span class="font3">может продублировать процесс (в случае задания Azwraith) или запустить экземпляр JVM (в случае задания Hadoop), чтобы выполнить поставленное задание, в зависимости от типа работы.</span>
+<p> На рисунке 1 показана общая архитектура Azwraith, которая напоминает оригинальный Hadoop. Запуск заданий
+	Azwraith также следует рабочему процессу в Hadoop. Клиент должен указать тип задания (Azwraith или Hadoop) перед
+	отправкой на выполнение. <span style="font-style:italic">TaskTracker</span>, в
+	зависимости от типа работы, может продублировать процесс (в случае
+	задания Azwraith) или запустить экземпляр JVM (в случае задания Hadoop), чтобы выполнить поставленное задание.
 </p>
-<p><span class="font3">Для адаптации чреды выполнения Ostrich </span> <span class="font3" style="font-style:italic">как TaskWorker</span>
-	<span class="font3">из Hadoop, мы модифицировали Ostrich, чтобы соответствовать рабочему процессу и коммуникационным протоколам Hadoop, в том числе отчетам о состоянии и форматах вывода.</span><span
-			class="font3">Для связи с</span></p>
-<p><span class="font3" style="font-style:italic">TaskTracker,</span> <span class="font3">новый</span> <span
-		class="font3" style="font-style:italic">TaskWorker</span> <span class="font3">встраивается в клиент RPC (Remote Procedure Call).</span><span
-		class="font3">Клиент RPC используется, чтобы сделать новый</span> <span class="font3" style="font-style:italic">TaskWorker</span>
-	<span class="font3">соответствовующим протоколу RPC Hadoop и предоставлять сервисы RPC </span> <span
-			class="font3"><span class="font3" style="font-style:italic">TaskWorker.</span></span><span class="font3"
-																																																 style="font-style:italic">TaskWorker</span>
-	<span class="font3">имеет доступ к HDFS (Hadoop Distributed File System) с клиентским модулем DFS, который перенаправляет обращения к HDFS.</span>
+<p> Для адаптации среды выполнения Ostrich в <span style="font-style:italic">TaskWorker</span> из Hadoop, мы
+	модифицировали Ostrich, чтобы соответствовать рабочему процессу и коммуникационным протоколам Hadoop, в том числе
+	отчетам о состоянии и форматах вывода. Для связи с <span style="font-style:italic">TaskTracker</span>, новый
+	<span style="font-style:italic">TaskWorker</span>
+	встраивается в клиент RPC (Remote Procedure Call). Клиент RPC используется, чтобы сделать новый <span
+			style="font-style:italic">TaskWorker</span> соответствовующим протоколу RPC Hadoop и предоставлять сервисы RPC
+	<span style="font-style:italic">TaskWorker</span>. <span style="font-style:italic">TaskWorker</span>
+	имеет доступ к HDFS (Hadoop Distributed File System) с клиентским модулем DFS, который перенаправляет обращения к
+	HDFS.
 </p>
-<p><span class="font3">Далее мы повысили производительность среды выполнения Azwraith с при помощи нескольких оптимизаций. </span><span
-		class="font3">Во-первых, Azwraith перекрывает голодание CPU и I/O, чтобы скрыть блокировки I/O времени как можно эффективнее. </span><span
-		class="font3">Во-вторых, Azwraith может агрессивно повторно использовать данные в памяти между операциями и таким образом избежать копирования большого объема памяти и наслаждаться хорошей локальностью кэша. </span><span
-		class="font3">В-третьих, Azwraith требуется от приложений реализоции комплекса агрегатных интерфейсов (де) сериализации для (де) сериализации набор данных вместе, что позволяет экономить огромное количество вызовов функций и получить лучшую локальность данных, чем в Hadoop.</span>
+<p> Далее мы повысили производительность среды выполнения Azwraith при помощи нескольких оптимизаций. Во-первых,
+	Azwraith перекрывает голодание CPU и I/O, чтобы скрыть блокировки I/O времени как можно эффективнее. Во-вторых,
+	Azwraith может агрессивно повторно использовать данные в памяти между операциями и таким образом избежать копирования
+	большого объема памяти и наслаждаться хорошей локальностью кэша. В-третьих, Azwraith требуется от приложений
+	реализоции комплекса агрегатных интерфейсов для (де)сериализации набора данных вместе, что позволяет
+	экономить огромное количество вызовов функций и получить лучшую локальность данных, чем в Hadoop.
 </p>
-<div><img src="hierarchical-ostrich_files/hierarchical-ostrich-2.png" style="width:256pt;height:114pt"/>
+<div><img src="hierarchical-ostrich_files/hierarchical-ostrich-2.jpg" style="width:256pt;height:114pt"/>
 
-	<p><span class="font1">Рисунок 2. </span><span class="font1">Общая производительность WordCount, LinearRegression и GigaSort. </span><span
-			class="font1"></span></p>
+<p> Рисунок 2. Общая производительность WordCount, LinearRegression и GigaSort.</p>
 </div>
 <br clear="all"/>
 
-<div><img src="hierarchical-ostrich_files/hierarchical-ostrich-3.png" style="width:218pt;height:149pt"/>
+<div><img src="hierarchical-ostrich_files/hierarchical-ostrich-3.jpg" style="width:218pt;height:149pt"/>
 
-	<p><span class="font1">Рисунок 3. </span><span
-			class="font1">Производительность Azwraith System Cache на K-Means</span></p>
+	<p> Рисунок 3. Производительность Azwraith System Cache на K-Means</p>
 </div>
-<br clear="all"/>
-
-<p><span class="font3">Чтобы включить повторное использование данных между задачами, мы спроектировали и реализовали сервер кэширования как процесс-демон на каждом подчиненном узле, для ослуживания всех доступов на чтение к HDFS. </span><span
-		class="font3">Кэш-сервер использует интерфейсы разделяемой памяти и механизм семафоров операционной системы, чтобы обеспечить управление клиентам кэша (то есть,</span>
-	<span class="font3" style="font-style:italic">TaskWorkers),</span> <span class="font3">которые обращаются к разделяемой памяти, управляемый кэш-сервером на пути доступа к локальной памяти.</span><span
-			class="font3">Использование разделяемой памяти также увеличивает выгоду от использования памяти, так как все задачи на том же узле могут разделять одну единственную копию данных и, таким образом оставить больше памяти, доступной для кэширования и вычислений.</span>
+<p> Чтобы включить повторное использование данных между задачами, мы спроектировали и реализовали сервер кэширования как
+	процесс-демон на каждом подчиненном узле, для ослуживания всех доступов на чтение к HDFS. Кэш-сервер использует
+	интерфейсы разделяемой памяти и механизм семафоров операционной системы, чтобы обеспечить управление клиентам кэша (то
+	есть, <span style="font-style:italic">TaskWorkers</span>), которые обращаются к разделяемой памяти, управляемsй
+	кэш-сервером на пути доступа к локальной памяти. Использование разделяемой памяти также увеличивает выгоду от
+	использования памяти, так как все задачи на том же узле могут разделять одну единственную копию данных и, таким
+	образом оставить больше памяти, доступной для кэширования и вычислений.
 </p>
-<p><span class="font3">Мы также расширяем поддержку расписания Hadoop, для планирования задачи для узлах, где кэшируются входные данные. </span><span
-		class="font3">Azwraith отслеживает информацию о нахождении кэша, с отображением ее на информацию о нахождении данных для дисковой подсистемы Hadoop. </span><span
-		class="font3">При получении запроса на назначение задачи от подчиненного узла, планировщик сначала получить список Map задач для запрашивающего подчиненного узла, и назначить задачу для которой есть данные в локальном кеше, если таковые имеются. </span><span
-		class="font3">В противном случае, планировщик работает как обычно. </span><span class="font3">Расширение к системе планирования, составляет около 50 строк кода изменений в Hadoop.</span>
+<p> Мы также расширяем поддержку расписания Hadoop, для планирования задачи для узлах, где кэшируются входные данные.
+	Azwraith отслеживает информацию о нахождении кэша, с отображением ее на информацию о нахождении данных для дисковой
+	подсистемы Hadoop. При получении запроса на назначение задачи от подчиненного узла, планировщик сначала получить
+	список Map задач для запрашивающего подчиненного узла, и назначит задачу для которой есть данные в локальном кеше,
+	если таковые имеются. В противном случае, планировщик работает как обычно. Расширение к системе планирования,
+	составляет около 50 строк кода изменений в Hadoop.
 </p>
-<p><span class="font3">III.</span> <span class="font1" style="font-variant:small-caps">Оценка</span></p>
-<p><span
-		class="font3">Мы провели эксперименты на малом кластере из одного главного узла и 6 узлов подчиненных. </span><span
-		class="font3">Каждая машина была оснащена двумя 12-ядерными AMD Opteron процессорами, 64 Гб оперативной памяти и 4 SCSI жесткими дисками. </span><span
-		class="font3">Каждая машина подключена к общему коммутатору через 1Gb Ethernet. </span><span class="font3">Мы использовали Hadoop версии 0.20.1 запускаемого на Java SE 1.6.0. </span><span
-		class="font3">Azwraith также был построен на той же версии Hadoop. </span></p>
-<p><span class="font3">Как показано на рисунке 2, Azwraith получает существенное ускорение над Hadoop при различных размерах входных данных, начиная от 1,4 x до 3,5 x. </span><span
-		class="font3">Задачи ориентированные на вычисления, такие как WordCount и LinearRegression получили больший прирост скорости, чем I/O ресурсоемкие приложений ввода / такие как GigaSort.</span>
+<p> III. <span style="font-variant:small-caps">Оценка</span></p>
+<p> Мы провели эксперименты на малом кластере из одного главного узла и 6 подчиненных узлов. Каждая машина была оснащена
+	двумя 12-ядерными процессорами AMD Opteron, 64 Гб оперативной памяти и 4 SCSI жесткими дисками. Каждая машина
+	подключена к общему коммутатору через 1Gb Ethernet. Мы использовали Hadoop версии 0.20.1 который был запущен на Java SE
+	1.6.0. Azwraith также был построен для той же версии Hadoop.
 </p>
-<p><span class="font3">Как показано на рисунке 3, при поддержке системы кэширования, Azwraith получает 1.43X для 1.55X ускорения над Azwraith без кэширования, и 2.06X для 2.21X над Hadoop.</span>
+<p> Как показано на рисунке 2, Azwraith получает существенное ускорение над Hadoop при различных размерах входных
+	данных, начиная от 1,4 x до 3,5 x. Задачи ориентированные на вычисления, такие как WordCount и LinearRegression
+	получили больший прирост скорости, чем I/O ресурсоемкие приложений ввода/вывлда такие как GigaSort.
 </p>
-<p><span class="font3">IV.</span> <span class="font2" style="font-variant:small-caps">Заключение</span></p>
-<p><span class="font3">В этой статье, мы утверждали, что Hadoop имеет ограничения в эксплуатации локальных данных и параллелизма задач для многоядерных платформ. </span><span
-		class="font3">Затем мы расширили Hadoop иерархической схемой MapReduce. </span><span class="font3">Схема кэширования в памяти также интегрируется для кэширования данных, которые, вероятно, будут доступны в памяти. </span><span
-		class="font3">Оценка показала, что иерархическая схема превосходит Hadoop от 1.4x до 3.5x. </span></p>
-<p><span class="font2" style="font-variant:small-caps">Ссылки</span></p>
-<p><span
-		class="font2">[1]    J. Dean and S. Ghemawat, “MapReduce: simplified data processing on large clusters,” </span><span
-		class="font2" style="font-style:italic">Communications of the ACM, </span><span
-		class="font2">vol. 51, no. 1, pp. </span><span class="font2">107-113, 2008.</span></p>
-<p><span class="font2">[2]    A. Bialecki, M. Cafarella, D. Cutting, and O. OMalley, “Hadoop: a framework for running applications on large clusters built of commodity hardware,” <a
-		href="http://lucene">http://lucene</a>. apache. org/hadoop, 2005.</span></p>
-<p><span class="font2">[3]    R. Chen, H. Chen, and B. Zang, “Tiled mapreduce: Optimizing resource usages of data-parallel applications on multicore with tiling,” in </span><span
-		class="font2" style="font-style:italic">Proc. PACT,</span><span class="font2"> 2010.</span></p>
+<p> Как показано на рисунке 3, при поддержке системы кэширования, Azwraith получает 1.43X для 1.55X ускорения над
+	Azwraith без кэширования, и 2.06X для 2.21X над Hadoop.
+</p>
+<p> IV. <span style="font-variant:small-caps">Заключение</span></p>
+<p> В этой статье, мы утверждали, что Hadoop имеет ограничения в эксплуатации локальных данных и параллелизма задач для
+	многоядерных платформ. Затем мы расширили Hadoop иерархической схемой MapReduce. Схема кэширования в памяти также
+	интегрируется для кэширования данных, которые, вероятно, будут доступны в памяти. Оценка показала, что иерархическая
+	схема превосходит Hadoop от 1.4x до 3.5x.
+</p>
+<p><span style="font-variant:small-caps">Ссылки</span></p>
+<p>[1]    J. Dean and S. Ghemawat, “MapReduce: simplified data processing on large clusters,” <span
+		style="font-style:italic">Communications of the ACM, </span> vol. 51, no. 1, pp. 107-113, 2008.
+</p>
+<p><span>[2]    A. Bialecki, M. Cafarella, D. Cutting, and O. OMalley, “Hadoop: a framework for running applications on
+	large clusters built of commodity hardware,” <a href="http://lucene">http://lucene</a>. apache. org/hadoop, 2005.
+</span></p>
+<p>[3]    R. Chen, H. Chen, and B. Zang, “Tiled mapreduce: Optimizing resource usages of data-parallel applications on
+	multicore with tiling,” in <span style="font-style:italic">Proc. PACT, </span> 2010.
+</p>
 </body>
 </html>

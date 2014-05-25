@@ -181,7 +181,7 @@
 		class="font4"> given a placement </span><span class="font3" style="font-style:italic;">P</span><span class="font4"> as:</span>
 </p>
 
-<p><span class="font4"><img src="resource-aware-scheduler_files/resource-aware-scheduler-2.png"
+<p><span class="font4"><img src="resource-aware-scheduler_files/resource-aware-scheduler-2.jpg"
 														style="width:339pt;height:28pt;"/></span></p>
 
 <p><span class="font4">where </span><span class="font3" style="font-style:italic;">uM</span><span class="font4"> is a utility function that denotes increasing satisfaction of a job given a placement of map tasks, and </span><span
@@ -191,7 +191,7 @@
 
 <p><span class="font4">Notice that in practice a job will never get more tasks allocated to it than it has remaining: to reflect this in theory we cap the utility at Uj (P) = 1 for those cases.</span>
 </p>
-<img src="resource-aware-scheduler_files/resource-aware-scheduler-3.png" style="width:306pt;height:193pt;"/>
+<img src="resource-aware-scheduler_files/resource-aware-scheduler-3.jpg" style="width:306pt;height:193pt;"/>
 
 <p><span class="font3" style="font-weight:bold;">Fig. 2. </span><span
 		class="font3">Shape of the Utility Function when </span><span class="font3" style="font-style:italic;">s<sup>j</sup>re</sub>
@@ -221,7 +221,7 @@
 </div>
 <br clear="all"/>
 
-<div><img src="resource-aware-scheduler_files/resource-aware-scheduler-4.png" style="width:347pt;height:89pt;"/></div>
+<div><img src="resource-aware-scheduler_files/resource-aware-scheduler-4.jpg" style="width:347pt;height:89pt;"/></div>
 <br clear="all"/>
 
 <p><span class="font4">Figure 2 shows the generic shape of the utility function for a job that requires at least 20 map tasks to be allocated concurrently </span><span
@@ -241,11 +241,11 @@
 
 <p><span class="font4">Given an application placement matrix P, a utility value can be calculated for each job in the system. The performance of the system can then be measured as an ordered vector of job utility values, U. The objective of RAS is to find a new placement P of jobs on TaskTrackers that maximizes the global objective of the system, U(P), which is expressed as follows:</span>
 </p>
-<img src="resource-aware-scheduler_files/resource-aware-scheduler-5.png" style="width:327pt;height:101pt;"/>
+<img src="resource-aware-scheduler_files/resource-aware-scheduler-5.jpg" style="width:327pt;height:101pt;"/>
 
 <p><span class="font4">This optimization problem is a variant of the Class Constrained Multiple-Knapsack Problem. Since this problem is NP-hard, the scheduler adopts a heuristic inspired by [10], and which is outlined in Algorithm 1. The proposed algorithm consists of two major steps: placing reduce tasks and placing map tasks.</span>
 </p>
-<img src="resource-aware-scheduler_files/resource-aware-scheduler-6.png" style="width:348pt;height:416pt;"/>
+<img src="resource-aware-scheduler_files/resource-aware-scheduler-6.jpg" style="width:348pt;height:416pt;"/>
 
 <p><span class="font4">Reduce tasks are placed first to allow them to be evenly distributed across TaskTrackers. By doing this we allow reduce tasks to better multiplex network resources when pulling intermediate data and also enable better storage usage. The placement algorithm distributes reduce tasks evenly across TaskTrackers while avoiding collocating any two reduce tasks. If this is not feasible—due to the total number of tasks—it then gives preference to avoiding collocating reduce tasks from the same job. Recall that in contrast to other existing schedulers, RAS dynamically adjusts the number of map and reduce tasks allocated per TaskTracker while respecting its resource constraints. Notice also that when reduce tasks are placed first, they start running in shuffle phase, so that their demand of resources is directly proportional to the number of map tasks placed for the same job. Therefore, in the absence of map tasks for the same job, a reduce task in shuffle phase only consumes memory. It therefore follows that the system is unlikely to be fully booked by reduce tasks<sup><a
 		name="footnote1"></a><a href="#bookmark8">1</a></sup>.</span></p>
@@ -567,7 +567,7 @@
 
 <p><span class="font4">The goal of this experiment is to evaluate how RAS improves resource utilization compared to the Fair Scheduler when completion time goals are so relaxed that the main optimization objective of the algorithm is to maximize resource utilization (see Equation 5). To this end we associate with each job instance an highly relaxed completion time goal. We run the same workload using both the Fair Scheduler and RAS and compare different aspects of the results.</span>
 </p>
-<img src="resource-aware-scheduler_files/resource-aware-scheduler-7.png" style="width:277pt;height:92pt;"/>
+<img src="resource-aware-scheduler_files/resource-aware-scheduler-7.jpg" style="width:277pt;height:92pt;"/>
 
 <p><span class="font3" style="font-weight:bold;">Fig. 3. </span><span class="font3">Experiment 1: Workload makespan with different Fair Scheduler configurations (Y-axis starts at 4000s)</span>
 </p>
@@ -589,7 +589,7 @@
 
 <p><span class="font4">testing environment; the dotted line representing the reduce is at the bottom of the chart. As it can be observed, RAS does not allocate more concurrent map slots than the Fair Scheduler during most of the execution. Moreover, the sum of reduce and map tasks remains lower than the sum of reduce and map tasks allocated by the Fair Scheduler except for a small time interval (~ 100s) immediately after the submission of Job 6 (J6). RAS is able to improve the makespan while maintaining a lower level of concurrency because it does better at utilizing resources which ultimately results in better job performance. To get a better insight on how RAS utilizes resources as compared to the Fair Scheduler we plot the CPU utilization for both schedulers in Figures 4(c) and 4(d). These figures show the percentage of CPU time that TaskTrackers spent running tasks (either in system or user space), and the time that the CPU was waiting. For each metric we show the mean value for the cluster, and the standard deviation across TaskTrackers. Wait time represents the time that the CPU remains idle because all threads in the system are either idle or waiting for I/O operations to complete. Therefore, it is a measure of resource wastage, as the CPU remains inactive. While wait time is impossible to avoid entirely, it can be reduced by improving the overlapping of tasks that stress different resources in the Task-Tracker. It is noticeable that in the case of the Fair Scheduler the CPU spends more time waiting for I/O operations to complete than RAS. Further, modifying the number of concurrent slots used by the Fair Scheduler does not improve this result. The reason behind this observation is key to our work: other schedulers do not consider the resource consumption of applications when making task assignment decisions, and therefore are not able to achieve good overlap between I/O and CPU activity.</span>
 </p>
-<img src="resource-aware-scheduler_files/resource-aware-scheduler-9.png" style="width:286pt;height:108pt;"/>
+<img src="resource-aware-scheduler_files/resource-aware-scheduler-9.jpg" style="width:286pt;height:108pt;"/>
 
 <p><span class="font3" style="font-weight:bold;">Fig. 5. </span><span class="font3">Experiment 1: Job Utility</span></p>
 

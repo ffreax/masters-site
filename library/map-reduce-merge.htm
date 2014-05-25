@@ -195,7 +195,7 @@
 
 <p><span class="font4">here:</span></p>
 
-<p><span class="font1"><img src="map-reduce-merge_files/map-reduce-merge-3.png"
+<p><span class="font1"><img src="map-reduce-merge_files/map-reduce-merge-3.jpg"
 														style="width:130pt;height:33pt;"/></span></p>
 
 <p><span class="font4">The map function applies user-defined logic on every input key/value pair and transforms it into a list of intermediate key/value pairs. The reduce function applies user-defined logic to all intermediate values associated with the same intermediate key and produces a list of output values. This simplified interface enables developers to model their specific data processing into two-phase parallel tasks.</span>
@@ -235,7 +235,7 @@
 		class="font4">represent dataset lineages, k means keys, and v stands for value entities.</span>
 </p>
 
-<p><span class="font1"><img src="map-reduce-merge_files/map-reduce-merge-4.png"
+<p><span class="font1"><img src="map-reduce-merge_files/map-reduce-merge-4.jpg"
 														style="width:192pt;height:44pt;"/></span></p>
 
 <p><span class="font4">In this new model, the map function transforms an input key/value pair (ki,vi) into a list of intermediate key/value pairs [(k</span><span
@@ -280,13 +280,13 @@
 <p><span class="font4">Before these two datasets are joined in a merger, they are first processed by a pair of mappers and reducers. A complete data flow is shown in Fig. 3. On the left hand side, a mapper reads Employee entries and computes a bonus for each entry. A reducer then sums up these bonuses for every employee and sorts them by dept_id, then emp_id. On the right hand side, a mapper reads Department entries and computes bonus adjustments. A reducer then sorts these department entries. At the end, a merger matches the output records from the two reducers on dept_id using the sort-merge algorithm, applies a department-based bonus adjustment on employee bonuses. Pseudocode for these mappers and reducers are shown in Alg. 1, 2, 3, and 4.</span>
 </p>
 
-<div><img src="map-reduce-merge_files/map-reduce-merge-5.png" style="width:242pt;height:72pt;"/></div>
+<div><img src="map-reduce-merge_files/map-reduce-merge-5.jpg" style="width:242pt;height:72pt;"/></div>
 <br clear="all"/>
 
 <div><img src="map-reduce-merge_files/map-reduce-merge-6.jpg" style="width:260pt;height:232pt;"/></div>
 <br clear="all"/>
 
-<div><img src="map-reduce-merge_files/map-reduce-merge-7.png" style="width:243pt;height:76pt;"/></div>
+<div><img src="map-reduce-merge_files/map-reduce-merge-7.jpg" style="width:243pt;height:76pt;"/></div>
 <br clear="all"/>
 
 <p><span class="font4">After these two pairs of Map-Reduce tasks are finished, a merger task takes their intermediate outputs, and joins them on </span><span
@@ -314,7 +314,7 @@
 <div>
 	<p><span class="font4" style="font-weight:bold;">Figure 3: Example to join Employee and Department tables and compute employee bonuses (see § 3.1).</span>
 	</p>
-	<img src="map-reduce-merge_files/map-reduce-merge-8.png" style="width:246pt;height:96pt;"/></div>
+	<img src="map-reduce-merge_files/map-reduce-merge-8.jpg" style="width:246pt;height:96pt;"/></div>
 <br clear="all"/>
 
 <p><span class="font4">At the Merge phase, users might want to apply different data-processing logic on data based on their sources. An example is the </span><span
@@ -334,7 +334,7 @@
 		class="font4" style="font-style:italic;">iterator-manager</span><span class="font4">) that it is called for the information that controls the movement of these </span><span
 		class="font4" style="font-style:italic;">configurable iterators</span><span class="font4">. Later, we will describe several iteration patterns from relational join algorithms. A Merge phase driver, as shown in Alg. 5, is needed to coordinate these</span>
 </p>
-<img src="map-reduce-merge_files/map-reduce-merge-9.png" style="width:240pt;height:70pt;"/>
+<img src="map-reduce-merge_files/map-reduce-merge-9.jpg" style="width:240pt;height:70pt;"/>
 
 <p><span class="font4">Merge components and have them collaborate with each others.</span></p>
 
@@ -386,13 +386,13 @@
 <p><span class="font4">Still, it is a nuisance if a task never ends, so a framework should provide a mechanism to reduce the chance of it happening. In our implementation, we use a boolean pair returned by a user-defined function to indicate whether to move an iterator to point to the next entity. This function is called after each merge operation; true indicates forward and false indicates stay. If both booleans are false, then the whole merge process is terminated.</span>
 </p>
 
-<div><img src="map-reduce-merge_files/map-reduce-merge-11.png" style="width:250pt;height:108pt;"/></div>
+<div><img src="map-reduce-merge_files/map-reduce-merge-11.jpg" style="width:250pt;height:108pt;"/></div>
 <br clear="all"/>
 
-<div><img src="map-reduce-merge_files/map-reduce-merge-12.png" style="width:251pt;height:296pt;"/></div>
+<div><img src="map-reduce-merge_files/map-reduce-merge-12.jpg" style="width:251pt;height:296pt;"/></div>
 <br clear="all"/>
 
-<div><img src="map-reduce-merge_files/map-reduce-merge-13.png" style="width:253pt;height:99pt;"/></div>
+<div><img src="map-reduce-merge_files/map-reduce-merge-13.jpg" style="width:253pt;height:99pt;"/></div>
 <br clear="all"/>
 
 <p><span class="font4">Suppose reducers produce sorted outputs in an ascendant order, Alg. 8 shows the programming logic of coordinating iterator movement for sort-merge-alike algorithms. If both sources still have inputs, then move the iterator that points to a smaller key. If both keys are equivalent, then move the right iterator by default. If one source is exhausted, this information is stored in the input bool pair “hasMoreTuples,” move the iterator for the source that still has data.</span>
@@ -401,7 +401,7 @@
 <p><span class="font4">Alg. 9 is an implementation of nested-loop iteration pattern. In a nested loop, keys are ignored in determining how to move iterators. If the left and right sources are exhausted, then the merge process is terminated. It is a logic error if the right source still have data when the left is exhausted. If the left source is not exhausted, then move the right iterator only. When the right source is exhausted, move the left iterator and reset the right iterator to the beginning of its data source.</span>
 </p>
 
-<div><img src="map-reduce-merge_files/map-reduce-merge-14.png" style="width:245pt;height:162pt;"/></div>
+<div><img src="map-reduce-merge_files/map-reduce-merge-14.jpg" style="width:245pt;height:162pt;"/></div>
 <br clear="all"/>
 
 <p><span class="font4">To implement algorithms that follow the hash join’s two-scan iteration pattern, a merger first scans one data source from the beginning to the end, then repeats the scan on the other one, e.g., see Alg. 10.</span>
@@ -436,7 +436,7 @@
 		class="font4" style="font-style:italic;">relationally complete</span><span class="font4">, while being load-balanced, scalable, and parallel.</span>
 </p>
 
-<div><img src="map-reduce-merge_files/map-reduce-merge-15.png" style="width:252pt;height:121pt;"/></div>
+<div><img src="map-reduce-merge_files/map-reduce-merge-15.jpg" style="width:252pt;height:121pt;"/></div>
 <br clear="all"/>
 
 <p><span class="font4">• &nbsp;&nbsp;&nbsp;Projection: For each tuple t = (k, v) of the input relation, users can define a mapper to transform it into a projected output tuple t' = (k',v'), where </span><span
@@ -466,7 +466,7 @@
 <p><span class="font4">• &nbsp;&nbsp;&nbsp;Set Union: Assume the union operation (as well as other set operations described below) is performed over two relations. In Map-Reduce-Merge, each relation will be processed by Map-Reduce, and the sorted and grouped outputs of the reducers will be given to a merger. In each reducer, duplicated tuples from the same source can be skipped easily. The mappers for the two sources should share the same range parti-tioner, so that a merger can receive records within the same key range from the two reducers. The merger can then iterate on each input simultaneously and produce only one tuple if two input tuples from different sources are duplicates. Non-duplicated tuples are produced by this merger as well.</span>
 </p>
 
-<div><img src="map-reduce-merge_files/map-reduce-merge-16.png" style="width:246pt;height:95pt;"/></div>
+<div><img src="map-reduce-merge_files/map-reduce-merge-16.jpg" style="width:246pt;height:95pt;"/></div>
 <br clear="all"/>
 
 <p><span class="font4">• &nbsp;&nbsp;&nbsp;Set Intersection: First, partitioned and sorted Map-Reduce outputs are sent to mergers as described in the last item. A merger can then iterate on each input simultaneously and produce tuples that are shared by the two reducer outputs.</span>
@@ -578,7 +578,7 @@
 
 <p><span class="font1">Before feeding data from selected reducer partitions to a user-defined merger function, these tuples can be compared and see if they should be merged or not. In short, this</span>
 </p>
-<img src="map-reduce-merge_files/map-reduce-merge-17.png" style="width:242pt;height:106pt;"/>
+<img src="map-reduce-merge_files/map-reduce-merge-17.jpg" style="width:242pt;height:106pt;"/>
 
 <p><span class="font4">comparison can be done in a user-defined </span><span class="font4" style="font-style:italic;">matcher</span><span
 		class="font4"> that is simply a fine-grained selector.</span></p>
@@ -659,7 +659,7 @@
 		class="font4" style="font-style:italic;">from</span><span class="font4"> clause and one outer table), because it is essentially the same as the outer join, its logic can be processed during executing the outer one. Based on these observations, we use an execution plan that first does four 2-way joins for the overall 5-way join. Then, this plan does group-by and selection operations for the nested query and a sorting operation for the order-by clause. The join tree of this execution plan is shown in Fig. 7. This plan might not be the most efficient one. We just use it as an example for implementing a SQL query under the Map-Reduce-Merge framework. Notice that the </span><span
 		class="font4" style="font-style:italic;">region</span><span class="font4"> and</span></p>
 <img
-		src="map-reduce-merge_files/map-reduce-merge-19.png" style="width:237pt;height:361pt;"/>
+		src="map-reduce-merge_files/map-reduce-merge-19.jpg" style="width:237pt;height:361pt;"/>
 
 <p><span class="font4" style="font-weight:bold;">Figure 6: TPC-H Query 2.</span></p>
 

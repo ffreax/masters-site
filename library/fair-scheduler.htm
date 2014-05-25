@@ -257,7 +257,7 @@
 
 <p><span class="font5">Formal pseudocode for delay scheduling is as follows:</span></p>
 <img
-		src="fair-scheduler_files/fair-scheduler-6.png" style="width:235pt;height:287pt;"/>
+		src="fair-scheduler_files/fair-scheduler-6.jpg" style="width:235pt;height:287pt;"/>
 
 <p><span class="font5">Each job begins at a locality level of 0, where it can only launch node-local tasks. If it waits at least </span><span
 		class="font4" style="font-style:italic;">I]</span><span class="font5"> seconds, it goes to locality level 1 and may launch rack-local tasks. If it waits a further </span><span
@@ -280,7 +280,7 @@
 <p><span class="font5">We used a simple mathematical model to determine how waits should be set if the only goal is to provide the best response time for a given job. In this model, we assume that competing map tasks don't affect each other's bandwidth - perhaps because the bulk of the bandwidth in the cluster is used by reduce tasks, or because the job is small (which is 10-15s of response time matter). Instead, a nonlocal map just takes D seconds longer to run than a local map. D depends on the task; it might be 0 for CPU-bound jobs. We model the arrival of task requests at the master as a Poisson process where requests from nodes with local data arrive at a rate of one every t seconds. This is a good approximation if there are enough slots with local data regardless of the distribution of task lengths, by the Law of Rare Events. Suppose that we set the wait time for launching tasks locally to w. We calculated the expected gain in a task’s response time from delay scheduling, as opposed to launching it on the first request received, to be:</span>
 </p>
 
-<p><span class="font5"><img src="fair-scheduler_files/fair-scheduler-7.png" style="width:191pt;height:26pt;"/></span>
+<p><span class="font5"><img src="fair-scheduler_files/fair-scheduler-7.jpg" style="width:191pt;height:26pt;"/></span>
 </p>
 
 <p><span class="font5">A first implication of this result is that delay scheduling is worthwhile if D &gt;&nbsp;t. Intuitively, waiting is worthwhile if the delay from running non-locally is less than the expected wait for a local slot. This happens because 1 - e<sup>-w/t</sup> is always positive, so the sign of the gain is determined by D -1. Waiting might not be worthwhile in two conditions: if D is low (e.g. the job is not IO-bound) or if t is high (the job has few maps left or the cluster is running long tasks).</span>
@@ -1165,7 +1165,7 @@
 																																																			style="font-style:italic;">f<sub>i</sub>.</span><span
 		class="font5"> This algorithm implements the bucket-filling intuition in Section 3.1.</span></p>
 <img
-		src="fair-scheduler_files/fair-scheduler-18.png" style="width:208pt;height:298pt;"/>
+		src="fair-scheduler_files/fair-scheduler-18.jpg" style="width:208pt;height:298pt;"/>
 
 <p><span class="font5">The code contains three main loops (stages). The first </span><span class="font5"
 																																													 style="font-weight:bold;">for </span><span
