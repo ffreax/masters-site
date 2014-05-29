@@ -23,7 +23,7 @@
 	<script src="js/custom.js"></script>
 </head>
 
-<body>
+<body lang="en">
 <div id="content-wrap" class="container">
 	<style>
 		#menu a {
@@ -49,7 +49,7 @@
 <p><a href="#u1"> Introduction </a> <br/> <a href="#u2">1.</a><a href="#u2">Relevance of the
 	topic </a> <br/> <a href="#u3">2 Research goals and objectives, expected results </a><br/> <a
 		href="#u4">3 A review of research and development </a><br/> <a href="#u5">3.1
-	Scheduler in Hadoop</a> <br/> <a href="#u6">3.2 Scheduler «Longest Approximate Time to End (LATE)»</a> <br/> <a
+	Scheduler in Hadoop</a> <br/> <a href="#u6">3.2 Scheduler <q>Longest Approximate Time to End (LATE)</q></a> <br/> <a
 		href="#u7">3.3 Uniform planning (FAIR scheduler) [5]</a> <br/> <a href="#u8">3.4 Hadoop 2.0. </a><a href="#u8">Capacity
 	scheduler [6]</a> <br/> <a href="#u9"> 4 </a><a href="#u9">The proposed algorithm is based on lottery
 	scheduling</a> <br/> <a href="#u10">Conclusions</a> <br/> <a href="#u11">List of sources</a> <br/></p> <h3><a
@@ -107,7 +107,7 @@
 	scheduler allocates Map tasks to nodes having the maximum amount of data to perform (if possible, all data must be
 	located on the selected node, otherwise - on one of the nodes Rack and finally the remote reception). Hadoop, uses
 	backup tasks to mitigate the problem of heterogeneous clusters [1].
-</p> <h3><a name="u6">3.2 Scheduler «Longest Approximate Time to End (LATE)»</a></h3>
+</p> <h3><a name="u6">3.2 Scheduler <q>Longest Approximate Time to End (LATE)</q></a></h3>
 <p> Proposed speculative scheduler allows you to partially deal with the above shortcomings in environments with
 	conditions close to real. The basic idea is as follows: &quot;The scheduler is usually speculative runs tasks that
 	will have the smallest execution time, as these tasks to the best opportunities for overtaking speculative copy of the
@@ -153,7 +153,7 @@
 		framework Hadoop [Text] / VI Chuprin, AV Chernyshev, NE Gubenko / / Electronic Edition, Donetsk National Technical
 		University, 2013. - 356c
 	</li>
-	<li> Zaharia M. Improving MapReduce Performance in Heterogeneous Environments [Text] / M. Zaharia, A. Konwinski, AD
+	<li> Zaharia M. Improving MapReduce Performance in Heterogeneous Environments / M. Zaharia, A. Konwinski, AD
 		Joseph, R. Katz, I. Stoica / / Electronic edition, Berkley., 2009. - 14p
 	</li>
 	<li> Xiao Z. A Hierarchical Approach to Maximizing MapReduce Efficiency [Text] / Z. Xiao, H. Chen, B. Zang / / IEEE
